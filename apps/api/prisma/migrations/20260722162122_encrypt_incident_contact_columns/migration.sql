@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "incident_contacts" ALTER COLUMN "name" SET DATA TYPE TEXT,
+ALTER COLUMN "phone" SET DATA TYPE TEXT,
+ALTER COLUMN "email" SET DATA TYPE TEXT,
+ALTER COLUMN "safe_contact_instructions" SET DATA TYPE TEXT;

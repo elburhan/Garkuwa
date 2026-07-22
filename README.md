@@ -12,8 +12,9 @@ Hausa is the canonical public language at `/`; English is secondary at `/en`. Th
 - `packages/config`: strict TypeScript and shared ESLint configuration.
 - `infrastructure`: local PostGIS-capable PostgreSQL 17 server through Docker Compose.
 
-Only staff users, fixed staff roles, and user status are modeled. Business functionality will
-be added incrementally.
+The database models staff identity plus the first anonymous incident-submission domain. The
+incident endpoint is a backend foundation only; no public reporting form or staff moderation
+workflow exists yet. Business functionality will continue to be added incrementally.
 
 ## Prerequisites
 
@@ -117,6 +118,48 @@ infrastructure/        Local Docker Compose configuration
 The web application runs at `http://localhost:3000`; the health endpoint is
 `http://localhost:4000/api/health`.
 
+## Anonymous incident-submission foundation
+
+`POST /api/public/incidents` accepts a validated anonymous incident report and returns only a
+generic receipt acknowledgement. Citizens do not need accounts, and the API does not return an
+incident ID, internal case ID, status, tracking token, or tracking URL. There is no public case
+lookup or tracking workflow.
+
+The submission transaction verifies that the selected category is active, creates the incident
+with `NEW` status, optionally creates one separate `incident_contacts` record, and records the
+initial status-history transition. Optional contact data is stored only when the reporter
+provides a valid phone number or email address and explicitly consents to follow-up. Contact data
+is not part of the incident submission response.
+
+The optional contact `name`, `phone`, `email`, and safe-contact instructions are encrypted before
+database insertion with AES-256-GCM, a random 12-byte IV per value, and a versioned authenticated
+ciphertext format. Incident IDs, contact preference, consent, and timestamps remain ordinary
+queryable fields. Decryption is not exposed through any API; it may only be added later through a
+restricted and audited staff workflow. Incident descriptions, contact details, ciphertext,
+safe-contact instructions, coordinates, encryption keys, and database connection strings must not
+be written to application logs.
+
+The endpoint accepts JSON only and uses a 100 KB JSON body limit. Its in-memory protection allows
+five submissions per client IP in 15 minutes and rejects an identical normalized submission from
+the same IP for five minutes. These controls are per API process and reset on restart. A shared
+limiter store is required before running multiple API replicas. Express proxy trust is explicitly
+disabled because the production proxy topology is not approved yet; deployment configuration must
+be reviewed before trusting any forwarded client-IP header. The HTTP server uses a 10-second
+request timeout. CAPTCHA or Turnstile remains a possible later escalation and is not implemented.
+
+No production category taxonomy is seeded. Garkuwa Foundation must approve Hausa and English
+category names and descriptions before launch. Tests create or mock their own narrowly scoped
+categories. The current endpoint has no media-upload support.
+
+The additive migration is named `add_incident_submission_domain`. To create an equivalent future
+migration for a reviewed schema change and then apply checked-in migrations:
+
+```sh
+pnpm db:migrate --name add_incident_submission_domain --create-only
+pnpm db:migrate
+pnpm db:status
+```
+
 ## Environment variables
 
 Create `.env` only at the repository root. Next.js and Prisma resolve that file from their
@@ -125,6 +168,17 @@ configuration locations; the compiled API locates the workspace root by its
 `DATABASE_URL` and `WEB_ORIGIN` remain server-only. Both applications validate required values
 with Zod and fail with a readable error when configuration is missing or invalid. Never commit
 `.env`.
+
+`CONTACT_DATA_ENCRYPTION_KEY` is required by the API and must be canonical base64 representing
+exactly 32 random bytes. Generate a development key locally, place only its output in the ignored
+root `.env`, and use a separately managed production secret:
+
+```sh
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+```
+
+Do not commit generated keys or reuse development keys in production. Losing the key makes the
+encrypted contact values unrecoverable.
 
 ## Commands
 
@@ -171,9 +225,9 @@ placeholder URLs. It does not start PostgreSQL or run migrations.
 
 ## Current scope
 
-This repository contains only application bootstrapping, bilingual routing, environment
-validation, database connectivity, local tooling, foundational tests, and CI. It intentionally
-does **not** implement incident reporting, citizen/reporter data, news, editorial workflows,
-authentication, JWTs, sessions, role guards, dashboards, analytics, uploads, object storage,
-notifications, Redis, queues, outbox events, audit-log business logic, Kubernetes,
-microservices, or Kafka.
+This repository contains application bootstrapping, bilingual public pages, environment
+validation, database connectivity, local tooling, foundational tests, and the anonymous incident
+submission backend described above. It intentionally does **not** implement a public reporting
+form, public tracking, reporter accounts, incident listing or moderation, staff authentication,
+news or editorial workflows, dashboards, analytics, maps, uploads, object storage, notifications,
+Redis, queues, outbox events, audit-log business logic, Kubernetes, microservices, or Kafka.

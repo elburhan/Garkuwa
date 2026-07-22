@@ -20,6 +20,30 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum IncidentStatus {
+  NEW
+  UNDER_REVIEW
+  ACTIONED
+  CLOSED
+  REJECTED
+}
+
+enum SubmissionLanguage {
+  ha
+  en
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum PreferredContactMethod {
+  PHONE
+  EMAIL
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   /// Must be stored in normalized lowercase form by the future identity service.
@@ -32,6 +56,94 @@ model User {
   createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  assignedIncidents     Incident[]              @relation("IncidentAssignee")
+  incidentStatusChanges IncidentStatusHistory[] @relation("IncidentStatusChangedBy")
+
   @@index([role, status])
   @@map("staff_users")
+}
+
+model IncidentCategory {
+  id            String   @id @default(uuid()) @db.Uuid
+  nameHa        String   @unique @map("name_ha") @db.VarChar(160)
+  nameEn        String   @unique @map("name_en") @db.VarChar(160)
+  descriptionHa String?  @map("description_ha") @db.VarChar(500)
+  descriptionEn String?  @map("description_en") @db.VarChar(500)
+  isActive      Boolean  @default(true) @map("is_active")
+  displayOrder  Int      @default(0) @map("display_order")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  incidents Incident[]
+
+  @@index([isActive, displayOrder])
+  @@map("incident_categories")
+}
+
+model Incident {
+  id                    String             @id @default(uuid()) @db.Uuid
+  internalCaseId        String             @unique @map("internal_case_id") @db.VarChar(17)
+  categoryId            String             @map("category_id") @db.Uuid
+  description           String             @db.Text
+  incidentDate          DateTime?          @map("incident_date") @db.Date
+  incidentTime          DateTime?          @map("incident_time") @db.Time(0)
+  locationDescription   String?            @map("location_description") @db.VarChar(500)
+  state                 String?            @db.VarChar(100)
+  lga                   String?            @db.VarChar(100)
+  latitude              Decimal?           @db.Decimal(9, 6)
+  longitude             Decimal?           @db.Decimal(10, 6)
+  severity              IncidentSeverity
+  status                IncidentStatus     @default(NEW)
+  submissionLanguage    SubmissionLanguage @map("submission_language")
+  assignedToUserId      String?            @map("assigned_to_user_id") @db.Uuid
+  duplicateOfIncidentId String?            @map("duplicate_of_incident_id") @db.Uuid
+  submittedAt           DateTime           @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  updatedAt             DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  closedAt              DateTime?          @map("closed_at") @db.Timestamptz(3)
+
+  category            IncidentCategory        @relation(fields: [categoryId], references: [id])
+  assignedToUser      User?                   @relation("IncidentAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  duplicateOfIncident Incident?               @relation("IncidentDuplicates", fields: [duplicateOfIncidentId], references: [id], onDelete: SetNull)
+  duplicates          Incident[]              @relation("IncidentDuplicates")
+  contact             IncidentContact?
+  statusHistory       IncidentStatusHistory[]
+
+  @@index([categoryId, status])
+  @@index([status, severity, submittedAt])
+  @@index([assignedToUserId])
+  @@index([duplicateOfIncidentId])
+  @@map("incidents")
+}
+
+model IncidentContact {
+  id                      String                 @id @default(uuid()) @db.Uuid
+  incidentId              String                 @unique @map("incident_id") @db.Uuid
+  name                    String?                @db.Text
+  phone                   String?                @db.Text
+  email                   String?                @db.Text
+  preferredContactMethod  PreferredContactMethod @map("preferred_contact_method")
+  safeContactInstructions String?                @map("safe_contact_instructions") @db.Text
+  consentToContact        Boolean                @map("consent_to_contact")
+  createdAt               DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@map("incident_contacts")
+}
+
+model IncidentStatusHistory {
+  id              String          @id @default(uuid()) @db.Uuid
+  incidentId      String          @map("incident_id") @db.Uuid
+  fromStatus      IncidentStatus? @map("from_status")
+  toStatus        IncidentStatus  @map("to_status")
+  changedByUserId String?         @map("changed_by_user_id") @db.Uuid
+  comment         String?         @db.VarChar(1000)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  incident      Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  changedByUser User?    @relation("IncidentStatusChangedBy", fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([incidentId, createdAt])
+  @@index([changedByUserId])
+  @@map("incident_status_history")
 }

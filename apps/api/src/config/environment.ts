@@ -4,6 +4,8 @@ import { dirname, join, parse, resolve } from 'node:path';
 import { config as loadEnv } from 'dotenv';
 import { z } from 'zod';
 
+import { isValidContactDataEncryptionKey } from '../common/security/contact-data-key.js';
+
 function findWorkspaceEnvironmentPath(startDirectory: string): string | undefined {
   let directory = resolve(startDirectory);
   const filesystemRoot = parse(directory).root;
@@ -30,6 +32,9 @@ const apiEnvironmentSchema = z.object({
   API_PORT: z.coerce.number().int().min(1).max(65_535),
   WEB_ORIGIN: z.url(),
   DATABASE_URL: z.url().startsWith('postgresql://'),
+  CONTACT_DATA_ENCRYPTION_KEY: z.string().refine(isValidContactDataEncryptionKey, {
+    message: 'must be canonical base64 that decodes to exactly 32 bytes',
+  }),
 });
 
 export type ApiEnvironment = z.infer<typeof apiEnvironmentSchema>;
