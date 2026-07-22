@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 export interface PublicNavigationItem {
   href: string;
   label: string;
+  isAction?: boolean;
 }
 
 export function PublicNavigation({
@@ -19,7 +20,11 @@ export function PublicNavigation({
       <ul className="navigation-list">
         {items.map((item) => (
           <li key={item.href}>
-            <Link href={item.href} aria-current={pathname === item.href ? 'page' : undefined}>
+            <Link
+              className={item.isAction ? 'navigation-action' : undefined}
+              href={item.href}
+              aria-current={pathname === item.href ? 'page' : undefined}
+            >
               {item.label}
             </Link>
           </li>

@@ -7,6 +7,7 @@ export const publicRoutePairs = {
   help: { ha: '/taimako', en: '/en/help' },
   about: { ha: '/game-da-mu', en: '/en/about' },
   contact: { ha: '/tuntube-mu', en: '/en/contact' },
+  reportIncident: { ha: '/rahoton-lamari', en: '/en/report-incident' },
 } as const;
 
 export type PublicPageKey = keyof typeof publicRoutePairs;

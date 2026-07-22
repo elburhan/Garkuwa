@@ -10,6 +10,10 @@ const metadataKeys = {
   help: { title: 'helpTitle', description: 'helpDescription' },
   about: { title: 'aboutTitle', description: 'aboutDescription' },
   contact: { title: 'contactTitle', description: 'contactDescription' },
+  reportIncident: {
+    title: 'reportIncidentTitle',
+    description: 'reportIncidentDescription',
+  },
 } as const satisfies Record<
   PublicPageKey,
   {

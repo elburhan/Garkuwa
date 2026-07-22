@@ -14,21 +14,22 @@
     "help": "Taimako",
     "about": "Game da mu",
     "contact": "Tuntuɓe mu",
+    "reportIncident": "Bayar da Rahoto",
     "openMenu": "Buɗe menu",
     "closeMenu": "Rufe menu"
   },
   "homepage": {
     "eyebrow": "Dandali mai amfani da Hausa a gaba",
     "title": "Tabbatattun bayanan jama'a da bayar da rahoto cikin sirri",
-    "introduction": "Ana gina Dandalin Garkuwa domin tallafa wa samun tabbatattun labarai da sanarwar jama'a, tare da wata hanya ta daban ta aika rahoton wani lamari cikin sirri. Waɗannan ayyuka ba su fara aiki ba tukuna.",
-    "primaryAction": "Duba tambayoyi da amsoshi",
-    "secondaryAction": "Nemi taimako",
+    "introduction": "Ana gina Dandalin Garkuwa domin tallafa wa samun tabbatattun labarai da sanarwar jama'a, tare da wata hanya ta daban ta aika rahoton wani lamari cikin sirri. Fom ɗin rahoto yana samuwa yanzu; aikin labarai yana nan tafe.",
+    "primaryAction": "Bayar da rahoto",
+    "secondaryAction": "Duba tambayoyi da amsoshi",
     "pillarsTitle": "Ayyuka biyu da ake shirin samarwa",
     "pillarsIntroduction": "Za a ware bayanan da ake wallafawa ga jama'a daga rahotannin sirri da ma'aikata za su duba.",
     "newsTitle": "Tabbatattun labarai da sanarwa",
     "newsDescription": "Za a wallafa sanarwa, shawarwari, gargaɗi da sabbin bayanan jama'a bayan an bi tsarin tantancewa.",
     "reportingTitle": "Rahoton wani lamari cikin sirri",
-    "reportingDescription": "Za a samar da fom na musamman domin jama'a su aika bayanin wani lamari ba tare da buƙatar asusu ba.",
+    "reportingDescription": "Ana samun fom na musamman domin jama'a su aika bayanin wani lamari ba tare da buƙatar asusu ba.",
     "trustTitle": "Yadda aka tsara tsarin amana",
     "trustIntroduction": "Tsarin da ake shiryawa yana rage buƙatar bayanan mutum, amma ba ya yin alkawarin cewa haɗari ba zai taɓa faruwa ba.",
     "trustAccounts": "Ba za a buƙaci asusun ɗan ƙasa domin aika rahoto ba.",
@@ -38,8 +39,8 @@
     "stepsTitle": "Yadda tsarin zai yi aiki",
     "stepOneTitle": "Karanta tabbatattun bayanai",
     "stepOneDescription": "Duba labarai, sanarwa da shawarwarin jama'a da aka tantance.",
-    "stepTwoTitle": "Aika rahoto idan an ƙaddamar da fom",
-    "stepTwoDescription": "Bayar da muhimman bayanai ta hanyar fom na sirri idan aikin ya fara.",
+    "stepTwoTitle": "Aika rahoton wani lamari",
+    "stepTwoDescription": "Bayar da muhimman bayanai ta hanyar fom na sirri ba tare da buƙatar asusu ba.",
     "stepThreeTitle": "Ma'aikata su duba",
     "stepThreeDescription": "Ma'aikatan cikin gida za su duba bayanin ta tsarin gudanarwa su ɗauki matakin da ya dace.",
     "linksTitle": "Ƙarin bayani",
@@ -64,11 +65,11 @@
       },
       {
         "question": "Za a buƙaci jama'a su buɗe asusu?",
-        "answer": "A'a. Tsarin rahoton da ake shiryawa ba zai buƙaci asusun ɗan ƙasa ba."
+        "answer": "A'a. Aika rahoto ba ya buƙatar asusun ɗan ƙasa."
       },
       {
         "question": "Shin bayanan tuntuɓa dole ne?",
-        "answer": "A'a. Bayar da bayanan tuntuɓa domin yi wa mai rahoto ƙarin tambaya zai zama zaɓi."
+        "answer": "A'a. Bayar da bayanan tuntuɓa domin yi wa mai rahoto ƙarin tambaya zaɓi ne."
       },
       {
         "question": "Za a iya bibiyar rahoto a fili?",
@@ -88,26 +89,26 @@
       },
       {
         "question": "Shin labarai da fom ɗin rahoto sun fara aiki?",
-        "answer": "A'a. Dukansu ana kan gina su kuma za a nuna su a fili idan sun shirya."
+        "answer": "Fom ɗin bayar da rahoto yana samuwa yanzu. Aikin tabbatattun labarai da sanarwa yana nan tafe."
       }
     ]
   },
   "help": {
     "eyebrow": "Jagorar amfani",
     "title": "Taimako",
-    "introduction": "Wannan shafi yana bayyana yadda ake amfani da shafukan da ake da su da kuma yadda tsarin rahoto zai kasance idan an ƙaddamar da shi.",
+    "introduction": "Wannan shafi yana bayyana yadda ake amfani da shafukan da ake da su da kuma fom ɗin bayar da rahoton wani lamari.",
     "sections": [
       {
         "title": "Amfani da shafin jama'a",
-        "body": "Yi amfani da babban menu domin komawa shafin farko ko zuwa tambayoyi, taimako, bayani da tuntuɓa. Ayyukan labarai da rahoto ba su fara aiki ba tukuna."
+        "body": "Yi amfani da babban menu domin komawa shafin farko ko zuwa fom ɗin rahoto, tambayoyi, taimako, bayani da tuntuɓa. Aikin tabbatattun labarai yana nan tafe."
       },
       {
         "title": "Sauya harshe",
         "body": "Zaɓi Hausa ko Turanci a saman ko ƙasan shafi. Za a kai ka zuwa shafin da ya yi daidai da wanda kake karantawa."
       },
       {
-        "title": "Tsarin rahoto na gaba",
-        "body": "Idan an ƙaddamar da fom, mai rahoto zai bayyana abin da ya faru, sannan ma'aikatan cikin gida su duba bayanin. Ba za a buƙaci asusu ba."
+        "title": "Tsarin bayar da rahoto",
+        "body": "Mai rahoto zai bayyana abin da ya faru ta fom, sannan ma'aikatan cikin gida su duba bayanin. Ba a buƙatar asusu."
       },
       {
         "title": "Bayanan da ya dace a shirya",
@@ -122,7 +123,7 @@
         "body": "Wannan dandali ba madadin hukumomin gaggawa ba ne. Don tallafi na gama gari, a yi amfani da bayanan tuntuɓa da za a tabbatar a shafin Tuntuɓe mu."
       }
     ],
-    "reportingInactive": "Fom ɗin bayar da rahoto cikin sirri bai fara aiki ba a wannan mataki."
+    "reportingInactive": "Fom ɗin bayar da rahoto yana samuwa; ba ya bayar da hanyar bibiyar rahoto a fili."
   },
   "about": {
     "eyebrow": "Manufar aikin",
@@ -158,7 +159,7 @@
     "addressLabel": "Adireshin ofis",
     "addressPlaceholder": "[Za a tabbatar da adireshin ofis]",
     "sensitiveWarningTitle": "Kada a aika bayanan sirri ta hanyar tuntuɓa ta gama gari",
-    "sensitiveWarning": "Kada a aika hujjar wani lamari, bayanan sirri ko saƙon gaggawa ta waɗannan hanyoyi. Za a samar da fom na musamman na rahoto cikin sirri dabam.",
+    "sensitiveWarning": "Kada a aika hujjar wani lamari, bayanan sirri ko saƙon gaggawa ta waɗannan hanyoyi. A yi amfani da fom na musamman na rahoto maimakon haka.",
     "noForm": "Ba a samar da fom na tuntuɓa ko aika imel kai tsaye a wannan mataki ba."
   },
   "footer": {
@@ -176,11 +177,12 @@
   },
   "trust": {
     "title": "Bayani kan amana da sirri",
-    "body": "An tsara rahoton da ake shiryawa domin takaita bayanan da ake nema. Kada a aika bayanan sirri ta hanyoyin tuntuɓa na gama gari."
+    "body": "An tsara fom ɗin rahoto domin takaita bayanan da ake nema. Kada a aika bayanan sirri ta hanyoyin tuntuɓa na gama gari."
   },
   "featureStatus": {
     "comingSoon": "Ana nan tafe",
-    "notActive": "Wannan aikin bai fara aiki ba tukuna."
+    "available": "Yana samuwa",
+    "notActive": "Fom ɗin rahoto yana samuwa; aikin tabbatattun labarai yana nan tafe."
   },
   "metadata": {
     "homeTitle": "Dandalin Garkuwa",
@@ -192,7 +194,111 @@
     "aboutTitle": "Game da mu",
     "aboutDescription": "Manufa, harsuna da tsarin aikin Dandalin Garkuwa.",
     "contactTitle": "Tuntuɓe mu",
-    "contactDescription": "Bayanan tuntuɓar Gidauniyar Garkuwa da gargadin amfani da hanyoyin da suka dace."
+    "contactDescription": "Bayanan tuntuɓar Gidauniyar Garkuwa da gargadin amfani da hanyoyin da suka dace.",
+    "reportIncidentTitle": "Bayar da rahoton wani lamari",
+    "reportIncidentDescription": "Aika bayanin wani lamari cikin sirri ba tare da buƙatar asusu ba."
+  },
+  "public": {
+    "incidentReport": {
+      "eyebrow": "Rahoto cikin sirri",
+      "title": "Bayar da rahoton wani lamari",
+      "introduction": "Yi amfani da wannan fom domin aika bayanin wani lamari ga Gidauniyar Garkuwa don dubawa a cikin gida. Ba sai ka buɗe asusu ba.",
+      "privacyTitle": "Kafin ka fara",
+      "privacyBody": "Bayanan tuntuɓa zaɓi ne. Kada ka saka bayanan kanka ko na wani da ba su da muhimmanci ga lamarin. Ana kula da bayanai cikin tsari, amma ba za mu yi alkawarin cewa babu wani haɗari kwata-kwata ba.",
+      "emergencyTitle": "Wannan ba sabis na gaggawa ba ne",
+      "emergencyBody": "Idan akwai haɗari nan take, kada ka jira amsa daga wannan dandali. Tuntuɓi hukumomin gaggawa da suka dace a yankinka.",
+      "outcomeNotice": "Ma'aikatan Gidauniyar za su duba rahoton a cikin gida. Aika rahoto ba ya tabbatar da wani takamaiman sakamako, kuma babu hanyar bibiyarsa a fili.",
+      "required": "Dole",
+      "optional": "Zaɓi ne",
+      "sections": {
+        "incident": "Bayanin lamarin",
+        "details": "Ƙarin bayanin lamarin",
+        "coordinates": "Ko'odinet na wuri (zaɓi ne)",
+        "contact": "Bayanan tuntuɓa domin ƙarin bayani (zaɓi ne)"
+      },
+      "fields": {
+        "category": "Nau'in lamari",
+        "categoryHelp": "Zaɓi nau'in da ya fi dacewa da abin da ya faru.",
+        "description": "Bayani",
+        "descriptionHelp": "Faɗi abin da ya faru, lokacin da wurin da ya faru, da abin da ka sani. Kada ka saka bayanan mutum da ba su da amfani.",
+        "severity": "Girman lamarin a ganinka",
+        "severityHelp": "Wannan kimantawarka ce; ma'aikata na iya sake duba ta.",
+        "incidentDate": "Ranar da lamarin ya faru",
+        "incidentTime": "Lokacin da lamarin ya faru",
+        "locationDescription": "Bayanin wuri",
+        "locationHelp": "Ba sai ka bayar da cikakken adireshi ba.",
+        "state": "Jiha",
+        "lga": "Ƙaramar hukuma",
+        "latitude": "Latitud",
+        "longitude": "Longitud",
+        "coordinatesHelp": "Idan ka san su, ka bayar da latitud da longitud tare. Ba za mu nemi wurin na'urarka kai tsaye ba.",
+        "contactEnabled": "Ina son a iya tuntubata domin ƙarin bayani",
+        "contactHelp": "Idan ka zaɓa, bayanan tuntuɓarka za a rufa su kafin adanawa kuma za a yi amfani da su ne kawai domin yiwuwar ƙarin bayani. Bayar da su yana nufin rahoton bai zama marar suna gaba ɗaya ba.",
+        "name": "Suna",
+        "phone": "Lambar waya",
+        "email": "Imel",
+        "preferredContactMethod": "Hanyar tuntuɓa da ka fi so",
+        "phoneMethod": "Waya",
+        "emailMethod": "Imel",
+        "safeContactInstructions": "Umarnin yadda za a tuntube ka cikin aminci",
+        "safeContactInstructionsHelp": "Misali, lokutan da ya fi dacewa a kira. Kada ka saka kalmar sirri.",
+        "consent": "Na yarda a tuntube ni domin ƙarin bayani game da wannan rahoto."
+      },
+      "severity": {
+        "LOW": "Ƙarami",
+        "MEDIUM": "Matsakaici",
+        "HIGH": "Babba"
+      },
+      "categories": {
+        "placeholder": "Zaɓi nau'in lamari",
+        "loading": "Ana loda nau'ikan lamari…",
+        "error": "Ba a iya loda nau'ikan lamari ba. Ka sake gwadawa.",
+        "empty": "Babu nau'in lamari da aka amince da shi a yanzu.",
+        "retry": "Sake gwadawa"
+      },
+      "validation": {
+        "summaryTitle": "Akwai abin da ya kamata a gyara kafin a aika rahoton.",
+        "category": "Zaɓi ingantaccen nau'in lamari.",
+        "descriptionMin": "Bayani ya zama aƙalla haruffa 20 bayan cire sararin farko da na ƙarshe.",
+        "descriptionMax": "Bayani bai wuce haruffa 5000 ba.",
+        "date": "Yi amfani da ingantacciyar rana.",
+        "time": "Yi amfani da ingantaccen lokaci.",
+        "locationMax": "Bayanin wuri bai wuce haruffa 500 ba.",
+        "stateMax": "Sunan jiha bai wuce haruffa 100 ba.",
+        "lgaMax": "Sunan ƙaramar hukuma bai wuce haruffa 100 ba.",
+        "coordinatesPair": "Dole a bayar da latitud da longitud tare.",
+        "latitude": "Latitud ya zama lamba tsakanin -90 da 90.",
+        "longitude": "Longitud ya zama lamba tsakanin -180 da 180.",
+        "nameMax": "Suna bai wuce haruffa 160 ba.",
+        "phone": "Shigar da ingantacciyar lambar waya.",
+        "email": "Shigar da ingantaccen imel.",
+        "instructionsMax": "Umarnin tuntuɓa bai wuce haruffa 500 ba.",
+        "contactRequired": "Bayar da lambar waya ko imel idan kana son a tuntube ka.",
+        "preferredPhone": "Ana buƙatar lambar waya idan ita ce hanyar da ka fi so.",
+        "preferredEmail": "Ana buƙatar imel idan shi ne hanyar da ka fi so.",
+        "consent": "Dole ka amince kafin a adana bayanan tuntuɓa."
+      },
+      "actions": {
+        "submit": "Aika rahoto",
+        "submitting": "Ana aika rahoto…",
+        "home": "Komawa shafin farko",
+        "another": "Aika wani rahoto"
+      },
+      "errors": {
+        "validation": "Wasu bayanai ba su inganta ba. Ka duba wuraren da aka nuna.",
+        "payloadTooLarge": "Rahoton ya yi girma fiye da abin da za a iya karɓa. Ka taƙaita bayanin ka sake gwadawa.",
+        "unsupportedMedia": "Ba a iya aika wannan nau'in bayani ba.",
+        "rateLimit": "An samu yawan yunƙurin aika rahoto. Ka jira kaɗan kafin ka sake gwadawa.",
+        "network": "Ba a iya haɗawa da sabis ɗin rahoto. Ka duba haɗin intanet ka sake gwadawa.",
+        "timeout": "Aika rahoton ya ɗauki lokaci mai tsawo. Ka sake gwadawa idan haɗin ya daidaita.",
+        "server": "Ba a iya karɓar rahoton a yanzu. Ka sake gwadawa daga baya."
+      },
+      "success": {
+        "title": "An karɓi rahotonka",
+        "body": "An karɓi rahoton domin dubawa a cikin gida. Ba a samar da lambar bibiyar jama'a ba."
+      },
+      "characterCount": "Haruffa {current} cikin {maximum}"
+    }
   },
   "admin": {
     "title": "Sashen gudanarwa",

@@ -38,6 +38,7 @@ export function MobileNavigation({
             {items.map((item) => (
               <li key={item.href}>
                 <Link
+                  className={item.isAction ? 'navigation-action' : undefined}
                   href={item.href}
                   aria-current={pathname === item.href ? 'page' : undefined}
                   onClick={() => setIsOpen(false)}

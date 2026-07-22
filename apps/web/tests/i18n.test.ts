@@ -34,6 +34,7 @@ describe('web localization foundation', () => {
       help: { ha: '/taimako', en: '/en/help' },
       about: { ha: '/game-da-mu', en: '/en/about' },
       contact: { ha: '/tuntube-mu', en: '/en/contact' },
+      reportIncident: { ha: '/rahoton-lamari', en: '/en/report-incident' },
     });
 
     for (const page of Object.keys(publicRoutePairs) as (keyof typeof publicRoutePairs)[]) {
@@ -69,12 +70,14 @@ describe('web localization foundation', () => {
       ha.navigation.help,
       ha.navigation.about,
       ha.navigation.contact,
+      ha.navigation.reportIncident,
     ]).toEqual([
       'Shafin farko',
       'Tambayoyin da ake yawan yi',
       'Taimako',
       'Game da mu',
       'Tuntuɓe mu',
+      'Bayar da Rahoto',
     ]);
     expect([
       en.navigation.home,
@@ -82,6 +85,14 @@ describe('web localization foundation', () => {
       en.navigation.help,
       en.navigation.about,
       en.navigation.contact,
-    ]).toEqual(['Home', 'Frequently asked questions', 'Help', 'About us', 'Contact us']);
+      en.navigation.reportIncident,
+    ]).toEqual([
+      'Home',
+      'Frequently asked questions',
+      'Help',
+      'About us',
+      'Contact us',
+      'Report an Incident',
+    ]);
   });
 });
