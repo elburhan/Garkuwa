@@ -1,0 +1,201 @@
+{
+  "common": {
+    "siteName": "Gidauniyar Garkuwa",
+    "platformName": "Dandalin Garkuwa",
+    "languageHausa": "Hausa",
+    "languageEnglish": "English",
+    "comingSoon": "Ana nan tafe",
+    "learnMore": "Ƙara bayani"
+  },
+  "navigation": {
+    "label": "Babban menu",
+    "home": "Shafin farko",
+    "faq": "Tambayoyin da ake yawan yi",
+    "help": "Taimako",
+    "about": "Game da mu",
+    "contact": "Tuntuɓe mu",
+    "openMenu": "Buɗe menu",
+    "closeMenu": "Rufe menu"
+  },
+  "homepage": {
+    "eyebrow": "Dandali mai amfani da Hausa a gaba",
+    "title": "Tabbatattun bayanan jama'a da bayar da rahoto cikin sirri",
+    "introduction": "Ana gina Dandalin Garkuwa domin tallafa wa samun tabbatattun labarai da sanarwar jama'a, tare da wata hanya ta daban ta aika rahoton wani lamari cikin sirri. Waɗannan ayyuka ba su fara aiki ba tukuna.",
+    "primaryAction": "Duba tambayoyi da amsoshi",
+    "secondaryAction": "Nemi taimako",
+    "pillarsTitle": "Ayyuka biyu da ake shirin samarwa",
+    "pillarsIntroduction": "Za a ware bayanan da ake wallafawa ga jama'a daga rahotannin sirri da ma'aikata za su duba.",
+    "newsTitle": "Tabbatattun labarai da sanarwa",
+    "newsDescription": "Za a wallafa sanarwa, shawarwari, gargaɗi da sabbin bayanan jama'a bayan an bi tsarin tantancewa.",
+    "reportingTitle": "Rahoton wani lamari cikin sirri",
+    "reportingDescription": "Za a samar da fom na musamman domin jama'a su aika bayanin wani lamari ba tare da buƙatar asusu ba.",
+    "trustTitle": "Yadda aka tsara tsarin amana",
+    "trustIntroduction": "Tsarin da ake shiryawa yana rage buƙatar bayanan mutum, amma ba ya yin alkawarin cewa haɗari ba zai taɓa faruwa ba.",
+    "trustAccounts": "Ba za a buƙaci asusun ɗan ƙasa domin aika rahoto ba.",
+    "trustContact": "Bayar da bayanan tuntuɓa domin ƙarin bayani zai zama zaɓi.",
+    "trustTracking": "Ba za a samar da hanyar bibiyar rahoto a fili ba.",
+    "trustSeparation": "Bayanan jama'a da rahotannin sirri za su bi hanyoyin aiki daban-daban.",
+    "stepsTitle": "Yadda tsarin zai yi aiki",
+    "stepOneTitle": "Karanta tabbatattun bayanai",
+    "stepOneDescription": "Duba labarai, sanarwa da shawarwarin jama'a da aka tantance.",
+    "stepTwoTitle": "Aika rahoto idan an ƙaddamar da fom",
+    "stepTwoDescription": "Bayar da muhimman bayanai ta hanyar fom na sirri idan aikin ya fara.",
+    "stepThreeTitle": "Ma'aikata su duba",
+    "stepThreeDescription": "Ma'aikatan cikin gida za su duba bayanin ta tsarin gudanarwa su ɗauki matakin da ya dace.",
+    "linksTitle": "Ƙarin bayani",
+    "linksDescription": "Karanta yadda aka tsara dandalin, abin da ake iya tsammani, da hanyoyin neman taimako."
+  },
+  "faq": {
+    "eyebrow": "Bayani a taƙaice",
+    "title": "Tambayoyin da ake yawan yi",
+    "introduction": "Amsoshi game da manufar dandalin da ayyukan da ake shirin samarwa.",
+    "items": [
+      {
+        "question": "Mene ne Dandalin Garkuwa?",
+        "answer": "Dandali ne da ake ginawa domin tabbatattun bayanan jama'a da kuma wata hanya ta daban ta aika rahoton wani lamari cikin sirri."
+      },
+      {
+        "question": "Me ya sa Hausa ce harshen farko?",
+        "answer": "An sa Hausa a gaba domin bayanai su fi sauƙin samu ga al'ummomin da ke amfani da ita a rayuwar yau da kullum."
+      },
+      {
+        "question": "Akwai Turanci?",
+        "answer": "Eh. Ana samar da shafukan Turanci a cikin wannan manhaja ɗaya, amma Hausa ce harshen farko na jama'a."
+      },
+      {
+        "question": "Za a buƙaci jama'a su buɗe asusu?",
+        "answer": "A'a. Tsarin rahoton da ake shiryawa ba zai buƙaci asusun ɗan ƙasa ba."
+      },
+      {
+        "question": "Shin bayanan tuntuɓa dole ne?",
+        "answer": "A'a. Bayar da bayanan tuntuɓa domin yi wa mai rahoto ƙarin tambaya zai zama zaɓi."
+      },
+      {
+        "question": "Za a iya bibiyar rahoto a fili?",
+        "answer": "A'a. Ba a shirin samar da shafin bibiyar rahoto ga jama'a."
+      },
+      {
+        "question": "Yaya za a kula da bayanan sirri?",
+        "answer": "An tsara aikin domin takaita bayanan da ake nema da ware rahotanni daga abubuwan da ake wallafawa. Za a ci gaba da nazarin matakan kariya yayin gina aikin."
+      },
+      {
+        "question": "Mene ne bambanci tsakanin bayanan jama'a da rahoton wani lamari?",
+        "answer": "Bayanan jama'a za a tantance su kafin wallafawa. Rahoton wani lamari kuma zai shiga tsarin duba bayanan cikin gida, ba za a wallafa shi kai tsaye ba."
+      },
+      {
+        "question": "Me ya kamata a yi idan akwai gaggawa?",
+        "answer": "Kada a jira wannan dandali. A tuntubi hukumomin gaggawa da suka dace a yankin da lamarin ya faru."
+      },
+      {
+        "question": "Shin labarai da fom ɗin rahoto sun fara aiki?",
+        "answer": "A'a. Dukansu ana kan gina su kuma za a nuna su a fili idan sun shirya."
+      }
+    ]
+  },
+  "help": {
+    "eyebrow": "Jagorar amfani",
+    "title": "Taimako",
+    "introduction": "Wannan shafi yana bayyana yadda ake amfani da shafukan da ake da su da kuma yadda tsarin rahoto zai kasance idan an ƙaddamar da shi.",
+    "sections": [
+      {
+        "title": "Amfani da shafin jama'a",
+        "body": "Yi amfani da babban menu domin komawa shafin farko ko zuwa tambayoyi, taimako, bayani da tuntuɓa. Ayyukan labarai da rahoto ba su fara aiki ba tukuna."
+      },
+      {
+        "title": "Sauya harshe",
+        "body": "Zaɓi Hausa ko Turanci a saman ko ƙasan shafi. Za a kai ka zuwa shafin da ya yi daidai da wanda kake karantawa."
+      },
+      {
+        "title": "Tsarin rahoto na gaba",
+        "body": "Idan an ƙaddamar da fom, mai rahoto zai bayyana abin da ya faru, sannan ma'aikatan cikin gida su duba bayanin. Ba za a buƙaci asusu ba."
+      },
+      {
+        "title": "Bayanan da ya dace a shirya",
+        "body": "Ka iya shirya taƙaitaccen bayanin abin da aka gani, lokaci, wuri da dalilin da ya sa bayanin yake da muhimmanci. Kada a ƙara bayanan mutum da ba su da amfani ga lamarin."
+      },
+      {
+        "title": "Bayar da rahoto cikin alhaki",
+        "body": "A bayar da abin da aka sani ba tare da ƙirƙira zargi ko jefa kai ko wani cikin haɗari ba. Kada a aika kalmar sirri, takardun mutum marasa amfani, ko fayil da ba a da izinin rarrabawa."
+      },
+      {
+        "title": "Gaggawa da tallafi",
+        "body": "Wannan dandali ba madadin hukumomin gaggawa ba ne. Don tallafi na gama gari, a yi amfani da bayanan tuntuɓa da za a tabbatar a shafin Tuntuɓe mu."
+      }
+    ],
+    "reportingInactive": "Fom ɗin bayar da rahoto cikin sirri bai fara aiki ba a wannan mataki."
+  },
+  "about": {
+    "eyebrow": "Manufar aikin",
+    "title": "Game da Dandalin Garkuwa",
+    "introduction": "Ana gina wannan dandali domin taimaka wa jama'a su samu bayani mai amfani da kuma samun hanyar aika rahoton wani lamari cikin tsari.",
+    "sections": [
+      {
+        "title": "Hausa a gaba, Turanci a matsayin zaɓi",
+        "body": "An tsara Hausa a matsayin harshen farko domin sauƙaƙa samun bayani. Ana tallafa wa Turanci a cikin manhaja ɗaya, ba a matsayin wata manhaja ta daban ba."
+      },
+      {
+        "title": "Hanyoyin aiki daban-daban",
+        "body": "Abubuwan da za a wallafa ga jama'a za su bi tsarin tantancewa. Rahotannin sirri kuma za su bi tsarin duba bayanan cikin gida."
+      },
+      {
+        "title": "Amfani da alhaki",
+        "body": "An tsara dandalin domin tallafa wa aiki mai amfani da haɗin gwiwa da masu ruwa da tsaki na jama'a a Najeriya, ba tare da yin iƙirarin wata amincewar hukuma ba."
+      },
+      {
+        "title": "Gina aiki a hankali",
+        "body": "Ana samar da tushe da shafukan bayani da farko. Za a ƙara ayyuka ne a matakai bayan an kammala ƙarin bita da gwaji."
+      }
+    ]
+  },
+  "contact": {
+    "eyebrow": "Tallafi na gama gari",
+    "title": "Tuntuɓe mu",
+    "introduction": "Za a wallafa tabbatattun bayanan tuntuɓar Gidauniyar Garkuwa a nan bayan an amince da su.",
+    "emailLabel": "Imel",
+    "emailPlaceholder": "[Za a tabbatar da imel na hukuma]",
+    "telephoneLabel": "Lambar waya",
+    "telephonePlaceholder": "[Za a tabbatar da lambar wayar hukuma]",
+    "addressLabel": "Adireshin ofis",
+    "addressPlaceholder": "[Za a tabbatar da adireshin ofis]",
+    "sensitiveWarningTitle": "Kada a aika bayanan sirri ta hanyar tuntuɓa ta gama gari",
+    "sensitiveWarning": "Kada a aika hujjar wani lamari, bayanan sirri ko saƙon gaggawa ta waɗannan hanyoyi. Za a samar da fom na musamman na rahoto cikin sirri dabam.",
+    "noForm": "Ba a samar da fom na tuntuɓa ko aika imel kai tsaye a wannan mataki ba."
+  },
+  "footer": {
+    "summary": "Ana gina dandali mai amfani da Hausa a gaba domin tabbatattun bayanan jama'a da rahoto cikin sirri.",
+    "navigationLabel": "Hanyoyin shafin ƙasa",
+    "languagesLabel": "Zaɓin harshe",
+    "emergencyTitle": "Idan akwai gaggawa",
+    "emergencyText": "Kada a jira wannan dandali. A tuntubi hukumomin gaggawa da suka dace a yankinku.",
+    "ownership": "Gidauniyar Garkuwa. An tanadi wannan dandalin domin bayanan jama'a."
+  },
+  "accessibility": {
+    "skipToContent": "Tsallaka zuwa babban bayani",
+    "languageNavigation": "Zaɓin harshe",
+    "currentLanguage": "Harshen da ake amfani da shi"
+  },
+  "trust": {
+    "title": "Bayani kan amana da sirri",
+    "body": "An tsara rahoton da ake shiryawa domin takaita bayanan da ake nema. Kada a aika bayanan sirri ta hanyoyin tuntuɓa na gama gari."
+  },
+  "featureStatus": {
+    "comingSoon": "Ana nan tafe",
+    "notActive": "Wannan aikin bai fara aiki ba tukuna."
+  },
+  "metadata": {
+    "homeTitle": "Dandalin Garkuwa",
+    "homeDescription": "Dandali mai amfani da Hausa a gaba da ake ginawa domin tabbatattun bayanan jama'a da rahoto cikin sirri.",
+    "faqTitle": "Tambayoyin da ake yawan yi",
+    "faqDescription": "Amsoshi game da Dandalin Garkuwa da ayyukan da ake shirin samarwa.",
+    "helpTitle": "Taimako",
+    "helpDescription": "Jagorar amfani da Dandalin Garkuwa da bayanin tsarin rahoto na gaba.",
+    "aboutTitle": "Game da mu",
+    "aboutDescription": "Manufa, harsuna da tsarin aikin Dandalin Garkuwa.",
+    "contactTitle": "Tuntuɓe mu",
+    "contactDescription": "Bayanan tuntuɓar Gidauniyar Garkuwa da gargadin amfani da hanyoyin da suka dace."
+  },
+  "admin": {
+    "title": "Sashen gudanarwa",
+    "placeholder": "Ba a fara gina sashen gudanarwa ba tukuna."
+  }
+}

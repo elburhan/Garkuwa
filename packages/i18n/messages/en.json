@@ -1,0 +1,201 @@
+{
+  "common": {
+    "siteName": "Garkuwa Foundation",
+    "platformName": "Garkuwa Platform",
+    "languageHausa": "Hausa",
+    "languageEnglish": "English",
+    "comingSoon": "Coming soon",
+    "learnMore": "Learn more"
+  },
+  "navigation": {
+    "label": "Primary navigation",
+    "home": "Home",
+    "faq": "Frequently asked questions",
+    "help": "Help",
+    "about": "About us",
+    "contact": "Contact us",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "homepage": {
+    "eyebrow": "A Hausa-first public platform",
+    "title": "Verified public information and confidential reporting",
+    "introduction": "The Garkuwa Platform is being developed to support verified news and public updates alongside a separate channel for confidential incident reporting. These services are not live yet.",
+    "primaryAction": "Read questions and answers",
+    "secondaryAction": "Get help",
+    "pillarsTitle": "Two planned public services",
+    "pillarsIntroduction": "Information published for the public will remain separate from confidential reports reviewed by internal staff.",
+    "newsTitle": "Verified news and updates",
+    "newsDescription": "Announcements, advisories, warnings and public updates will be published after following a verification process.",
+    "reportingTitle": "Confidential incident reporting",
+    "reportingDescription": "A dedicated form will allow citizens to share incident information without creating an account.",
+    "trustTitle": "How trust is being designed",
+    "trustIntroduction": "The planned workflow reduces the personal information requested, but it does not make an absolute promise that risk can never occur.",
+    "trustAccounts": "Citizen accounts will not be required to submit a report.",
+    "trustContact": "Follow-up contact details will be optional.",
+    "trustTracking": "Reports will not have a public tracking portal.",
+    "trustSeparation": "Public information and confidential reports will follow separate workflows.",
+    "stepsTitle": "How it will work",
+    "stepOneTitle": "Read verified information",
+    "stepOneDescription": "Review verified news, announcements and public advisories.",
+    "stepTwoTitle": "Submit when the form launches",
+    "stepTwoDescription": "Share relevant information through the confidential form once it is available.",
+    "stepThreeTitle": "Internal staff review",
+    "stepThreeDescription": "Internal staff will review information through the administration system and take an appropriate next step.",
+    "linksTitle": "More information",
+    "linksDescription": "Learn how the platform is planned, what to expect and where to find general help."
+  },
+  "faq": {
+    "eyebrow": "Essential information",
+    "title": "Frequently asked questions",
+    "introduction": "Answers about the platform's purpose and the services being planned.",
+    "items": [
+      {
+        "question": "What is the Garkuwa Platform?",
+        "answer": "It is a platform being developed for verified public information and a separate channel for confidential incident reports."
+      },
+      {
+        "question": "Why is Hausa the default language?",
+        "answer": "Hausa is primary so information is easier to access for communities that use it in everyday life."
+      },
+      {
+        "question": "Is English supported?",
+        "answer": "Yes. English pages are provided in the same application, while Hausa remains the primary public language."
+      },
+      {
+        "question": "Will citizens need accounts?",
+        "answer": "No. The planned reporting workflow will not require a citizen account."
+      },
+      {
+        "question": "Will contact details be mandatory?",
+        "answer": "No. Providing contact details for possible follow-up will be optional."
+      },
+      {
+        "question": "Can a report be tracked publicly?",
+        "answer": "No. A public report-tracking portal is not planned."
+      },
+      {
+        "question": "How will confidential information be handled?",
+        "answer": "The workflow is designed to limit requested information and keep reports separate from published content. Safeguards will continue to be reviewed as the service is developed."
+      },
+      {
+        "question": "How is public content different from incident reports?",
+        "answer": "Public information will be verified before publication. Incident reports will enter an internal review workflow and will not be published automatically."
+      },
+      {
+        "question": "What should someone do during an immediate emergency?",
+        "answer": "Do not wait for this platform. Contact the appropriate emergency services for the area where the emergency is happening."
+      },
+      {
+        "question": "Are the news and reporting services live?",
+        "answer": "No. Both are under development and will be clearly identified when they become available."
+      }
+    ]
+  },
+  "help": {
+    "eyebrow": "Using the platform",
+    "title": "Help",
+    "introduction": "This page explains the available public pages and what the reporting process is expected to look like after launch.",
+    "sections": [
+      {
+        "title": "Using the public site",
+        "body": "Use the primary navigation to return home or open questions, help, about and contact pages. News and reporting services are not live yet."
+      },
+      {
+        "title": "Changing language",
+        "body": "Choose Hausa or English in the header or footer. You will be taken to the equivalent version of the page you are reading."
+      },
+      {
+        "title": "The future reporting process",
+        "body": "After the form launches, a reporter will describe what happened and internal staff will review the information. An account will not be required."
+      },
+      {
+        "title": "Information to prepare",
+        "body": "Prepare a short account of what was observed, when and where it happened, and why it may be important. Avoid adding personal information that is not relevant."
+      },
+      {
+        "title": "Safe and responsible reporting",
+        "body": "Share what is known without inventing allegations or putting yourself or another person at risk. Do not upload passwords, unnecessary identity documents, or files you are not permitted to share."
+      },
+      {
+        "title": "Emergencies and general support",
+        "body": "This platform is not a replacement for emergency services. For general support, use the official details once confirmed on the Contact us page."
+      }
+    ],
+    "reportingInactive": "The confidential reporting form is not active during this phase."
+  },
+  "about": {
+    "eyebrow": "Project purpose",
+    "title": "About the Garkuwa Platform",
+    "introduction": "This platform is being developed to help people access useful public information and share incident information through an appropriate channel.",
+    "sections": [
+      {
+        "title": "Hausa first, with English support",
+        "body": "Hausa is the primary language to improve access to information. English is supported in the same application rather than a separate product."
+      },
+      {
+        "title": "Separate workflows",
+        "body": "Content intended for publication will follow a verification workflow. Confidential reports will follow a separate internal review workflow."
+      },
+      {
+        "title": "Responsible operational use",
+        "body": "The platform is intended to support useful work and collaboration with public stakeholders in Nigeria without claiming a formal government endorsement."
+      },
+      {
+        "title": "Incremental delivery",
+        "body": "The foundation and informational pages are being delivered first. Additional services will be introduced in stages after further review and testing."
+      }
+    ]
+  },
+  "contact": {
+    "eyebrow": "General support",
+    "title": "Contact us",
+    "introduction": "Confirmed Garkuwa Foundation contact details will be published here after approval.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "[Official email to be confirmed]",
+    "telephoneLabel": "Telephone",
+    "telephonePlaceholder": "[Official telephone number to be confirmed]",
+    "addressLabel": "Office address",
+    "addressPlaceholder": "[Office address to be confirmed]",
+    "sensitiveWarningTitle": "Do not send sensitive information through general contact channels",
+    "sensitiveWarning": "Do not send incident evidence, confidential information or emergency requests through these channels. A dedicated confidential reporting form will be provided separately.",
+    "noForm": "No contact form or direct email integration is available during this phase."
+  },
+  "footer": {
+    "summary": "A Hausa-first platform being developed for verified public information and confidential reporting.",
+    "navigationLabel": "Footer navigation",
+    "languagesLabel": "Language links",
+    "emergencyTitle": "During an emergency",
+    "emergencyText": "Do not wait for this platform. Contact the appropriate emergency services in your area.",
+    "ownership": "Garkuwa Foundation. This public platform is provided for community information."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to main content",
+    "languageNavigation": "Language selection",
+    "currentLanguage": "Current language"
+  },
+  "trust": {
+    "title": "Trust and confidentiality notice",
+    "body": "The planned reporting workflow is designed to limit requested information. Do not send sensitive information through ordinary contact channels."
+  },
+  "featureStatus": {
+    "comingSoon": "Coming soon",
+    "notActive": "This service is not active yet."
+  },
+  "metadata": {
+    "homeTitle": "Garkuwa Platform",
+    "homeDescription": "A Hausa-first platform being developed for verified public information and confidential reporting.",
+    "faqTitle": "Frequently asked questions",
+    "faqDescription": "Answers about the Garkuwa Platform and its planned public services.",
+    "helpTitle": "Help",
+    "helpDescription": "Guidance for using the Garkuwa Platform and understanding the future reporting workflow.",
+    "aboutTitle": "About us",
+    "aboutDescription": "The purpose, languages and planned workflows of the Garkuwa Platform.",
+    "contactTitle": "Contact us",
+    "contactDescription": "Garkuwa Foundation contact placeholders and guidance on using appropriate channels."
+  },
+  "admin": {
+    "title": "Administration area",
+    "placeholder": "The administration area has not been implemented yet."
+  }
+}

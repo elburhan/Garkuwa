@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum StaffRole {
+  SUPER_ADMIN
+  ADMIN
+  MODERATOR
+  EDITOR
+  ANALYST
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  /// Must be stored in normalized lowercase form by the future identity service.
+  email        String     @unique @db.VarChar(320)
+  passwordHash String     @map("password_hash")
+  displayName  String     @map("display_name")
+  role         StaffRole
+  status       UserStatus @default(ACTIVE)
+  lastLoginAt  DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([role, status])
+  @@map("staff_users")
+}

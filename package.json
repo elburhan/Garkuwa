@@ -1,0 +1,30 @@
+{
+  "name": "garkuwa-platform",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @garkuwa/api db:generate",
+    "db:migrate": "pnpm --filter @garkuwa/api db:migrate",
+    "db:status": "pnpm --filter @garkuwa/api db:status",
+    "db:studio": "pnpm --filter @garkuwa/api db:studio",
+    "db:verify": "pnpm --filter @garkuwa/api db:verify",
+    "docker:up": "node ./scripts/docker-compose.mjs up",
+    "docker:down": "node ./scripts/docker-compose.mjs down"
+  },
+  "devDependencies": {
+    "prettier": "3.9.6",
+    "turbo": "2.10.5",
+    "typescript": "5.9.3"
+  }
+}
