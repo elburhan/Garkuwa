@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { PublicShell } from '@/components/public/public-shell';
-import { getMessages, resolveLocaleSegment, supportedLocales } from '@/i18n';
+import { defaultLocale, getMessages, resolveLocaleSegment, supportedLocales } from '@/i18n';
 import { webEnvironment } from '@/lib/env';
 
 import '../globals.css';
@@ -14,7 +14,9 @@ type LocaleLayoutProps = Readonly<{
 }>;
 
 export function generateStaticParams() {
-  return supportedLocales.map((locale) => ({ locale }));
+  return supportedLocales
+    .filter((locale) => locale !== defaultLocale)
+    .map((locale) => ({ locale }));
 }
 
 export const dynamicParams = false;
@@ -38,12 +40,8 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
 export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
   const resolution = resolveLocaleSegment((await params).locale);
 
-  if (resolution.kind === 'not-found') {
+  if (resolution.kind !== 'render') {
     notFound();
-  }
-
-  if (resolution.kind === 'redirect') {
-    redirect(resolution.destination);
   }
 
   return (

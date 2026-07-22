@@ -13,16 +13,11 @@ export const publicRoutePairs = {
 export type PublicPageKey = keyof typeof publicRoutePairs;
 export type PublicPath = (typeof publicRoutePairs)[PublicPageKey][Locale];
 
-export type LocaleSegmentResolution =
-  { kind: 'render'; locale: 'en' } | { kind: 'redirect'; destination: '/' } | { kind: 'not-found' };
+export type LocaleSegmentResolution = { kind: 'render'; locale: 'en' } | { kind: 'not-found' };
 
 export function resolveLocaleSegment(segment: string): LocaleSegmentResolution {
-  if (!isSupportedLocale(segment)) {
+  if (!isSupportedLocale(segment) || segment === defaultLocale) {
     return { kind: 'not-found' };
-  }
-
-  if (segment === defaultLocale) {
-    return { kind: 'redirect', destination: '/' };
   }
 
   return { kind: 'render', locale: segment };

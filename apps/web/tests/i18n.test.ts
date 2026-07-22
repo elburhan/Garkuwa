@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import {
   defaultLocale,
@@ -21,8 +23,8 @@ describe('web localization foundation', () => {
     expect(defaultLocale).toBe('ha');
   });
 
-  it('redirects /ha to / and rejects unsupported locale segments', () => {
-    expect(resolveLocaleSegment('ha')).toEqual({ kind: 'redirect', destination: '/' });
+  it('renders only english in [locale] and rejects unsupported locale segments', () => {
+    expect(resolveLocaleSegment('ha')).toEqual({ kind: 'not-found' });
     expect(resolveLocaleSegment('en')).toEqual({ kind: 'render', locale: 'en' });
     expect(resolveLocaleSegment('fr')).toEqual({ kind: 'not-found' });
   });
@@ -53,6 +55,26 @@ describe('web localization foundation', () => {
     expect(generatedPaths.some((path) => String(path).startsWith('/ha'))).toBe(false);
     expect(getEquivalentPublicPath('/admin', 'en')).toBe('/admin');
     expect(getEquivalentPublicPath('/admin/settings', 'ha')).toBe('/admin/settings');
+  });
+
+  it('keeps canonical Hausa and English report routes as an explicit pair', () => {
+    expect(getPublicPath('ha', 'reportIncident')).toBe('/rahoton-lamari');
+    expect(getPublicPath('en', 'reportIncident')).toBe('/en/report-incident');
+    expect(getEquivalentPublicPath('/rahoton-lamari', 'en')).toBe('/en/report-incident');
+    expect(getEquivalentPublicPath('/en/report-incident', 'ha')).toBe('/rahoton-lamari');
+  });
+
+  it('keeps /ha redirect separate and blocks nested /ha locale pages', () => {
+    const legacyHaPage = readFileSync(resolve(process.cwd(), 'src/app/ha/page.tsx'), 'utf8');
+    const localeLayout = readFileSync(
+      resolve(process.cwd(), 'src/app/[locale]/layout.tsx'),
+      'utf8',
+    );
+
+    expect(legacyHaPage).toContain("redirect('/');");
+    expect(localeLayout).toContain('.filter((locale) => locale !== defaultLocale)');
+    expect(localeLayout).toContain("if (resolution.kind !== 'render')");
+    expect(getEquivalentPublicPath('/ha/report-incident', 'en')).toBe('/en');
   });
 
   it('uses a documented canonical-home fallback for unknown public paths', () => {
