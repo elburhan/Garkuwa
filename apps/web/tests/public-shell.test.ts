@@ -27,4 +27,17 @@ describe('public shell accessibility foundation', () => {
     expect(mobileNavigation).toContain('aria-controls="mobile-navigation-panel"');
     expect(mobileNavigation).toContain('id="mobile-navigation-panel"');
   });
+
+  it('keeps one page heading and grouped accessible form controls on the report page', () => {
+    const page = readSource('src/components/public/incident-report-page.tsx');
+    const form = readSource('src/components/public/incident-report-form.tsx');
+
+    expect(page).toContain('<PageHeader');
+    expect(form).not.toContain('<h1');
+    expect(form).toContain('<fieldset');
+    expect(form).toContain('<legend>');
+    expect(form).toContain('aria-invalid=');
+    expect(form).toContain('errorSummaryRef.current?.focus()');
+    expect(form).toContain('successRef.current?.focus()');
+  });
 });

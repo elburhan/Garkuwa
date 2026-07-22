@@ -39,10 +39,13 @@ export function PublicHome({ locale }: Readonly<{ locale: Locale }>) {
             <h1>{home.title}</h1>
             <p className="hero-introduction">{home.introduction}</p>
             <div className="action-row">
-              <Link className="button button-primary" href={getPublicPath(locale, 'faq')}>
+              <Link
+                className="button button-primary"
+                href={getPublicPath(locale, 'reportIncident')}
+              >
                 {home.primaryAction}
               </Link>
-              <Link className="button button-secondary" href={getPublicPath(locale, 'help')}>
+              <Link className="button button-secondary" href={getPublicPath(locale, 'faq')}>
                 {home.secondaryAction}
               </Link>
             </div>
@@ -64,7 +67,7 @@ export function PublicHome({ locale }: Readonly<{ locale: Locale }>) {
             <FeatureStatusCard
               title={home.newsTitle}
               description={home.newsDescription}
-              status={messages.featureStatus.comingSoon}
+              status={messages.featureStatus.available}
             />
             <FeatureStatusCard
               title={home.reportingTitle}

@@ -12,9 +12,9 @@ Hausa is the canonical public language at `/`; English is secondary at `/en`. Th
 - `packages/config`: strict TypeScript and shared ESLint configuration.
 - `infrastructure`: local PostGIS-capable PostgreSQL 17 server through Docker Compose.
 
-The database models staff identity plus the first anonymous incident-submission domain. The
-incident endpoint is a backend foundation only; no public reporting form or staff moderation
-workflow exists yet. Business functionality will continue to be added incrementally.
+The database models staff identity plus the first anonymous incident-submission domain. A
+Hausa-first public reporting form now uses that API; no staff moderation workflow exists yet.
+Business functionality will continue to be added incrementally.
 
 ## Prerequisites
 
@@ -115,10 +115,20 @@ infrastructure/        Local Docker Compose configuration
    pnpm dev
    ```
 
-The web application runs at `http://localhost:3000`; the health endpoint is
-`http://localhost:4000/api/health`.
+The web application runs at `http://localhost:3000`; the API runs on port `4000`, and its health
+endpoint is `http://localhost:4000/api/health`. The public reporting routes are:
+
+- Hausa (canonical): `http://localhost:3000/rahoton-lamari`
+- English: `http://localhost:3000/en/report-incident`
 
 ## Anonymous incident-submission foundation
+
+The public form loads approved choices from unauthenticated
+`GET /api/public/incident-categories`. The response contains only active categories, ordered by
+configured display order and Hausa name, with their public Hausa and English names and optional
+descriptions. Category creation and management remain out of scope. No production taxonomy is
+seeded: Garkuwa Foundation must configure and approve categories before real use, and any local
+development test category is not approved institutional copy.
 
 `POST /api/public/incidents` accepts a validated anonymous incident report and returns only a
 generic receipt acknowledgement. Citizens do not need accounts, and the API does not return an
@@ -151,6 +161,14 @@ No production category taxonomy is seeded. Garkuwa Foundation must approve Hausa
 category names and descriptions before launch. Tests create or mock their own narrowly scoped
 categories. The current endpoint has no media-upload support.
 
+The browser form mirrors the API's text, date, time, coordinate, severity, and optional-contact
+validation while leaving the backend authoritative. Submission language comes from the route;
+the form does not request device location or retain reports in browser storage. Empty optional
+fields are omitted. Contact remains entirely optional and its provided sensitive values are
+encrypted by the API before storage. Success confirms only receipt for internal review: there is
+no reporter account, public tracking reference, guaranteed outcome, media upload, or emergency
+response service.
+
 The additive migration is named `add_incident_submission_domain`. To create an equivalent future
 migration for a reviewed schema change and then apply checked-in migrations:
 
@@ -179,6 +197,11 @@ node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
 
 Do not commit generated keys or reuse development keys in production. Losing the key makes the
 encrypted contact values unrecoverable.
+
+`NEXT_PUBLIC_API_BASE_URL` must be the public API prefix, such as
+`http://localhost:4000/api` for local development. The web client validates this URL and safely
+normalizes a trailing slash. Production deployment can override it without changing components;
+never place database credentials or other backend secrets in a `NEXT_PUBLIC_` variable.
 
 ## Commands
 
@@ -227,7 +250,9 @@ placeholder URLs. It does not start PostgreSQL or run migrations.
 
 This repository contains application bootstrapping, bilingual public pages, environment
 validation, database connectivity, local tooling, foundational tests, and the anonymous incident
-submission backend described above. It intentionally does **not** implement a public reporting
-form, public tracking, reporter accounts, incident listing or moderation, staff authentication,
-news or editorial workflows, dashboards, analytics, maps, uploads, object storage, notifications,
-Redis, queues, outbox events, audit-log business logic, Kubernetes, microservices, or Kafka.
+submission backend and public form described above. It intentionally does **not** implement public
+tracking, reporter accounts, media uploads, device-location access, maps, a production category
+management interface, incident listing or moderation, staff authentication, news or editorial
+workflows, dashboards, analytics, object storage, notifications, Redis, queues, outbox events,
+audit-log business logic, Kubernetes, microservices, or Kafka. The form is an incremental
+foundation and is not a claim of production readiness.

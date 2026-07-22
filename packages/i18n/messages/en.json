@@ -14,21 +14,22 @@
     "help": "Help",
     "about": "About us",
     "contact": "Contact us",
+    "reportIncident": "Report an Incident",
     "openMenu": "Open menu",
     "closeMenu": "Close menu"
   },
   "homepage": {
     "eyebrow": "A Hausa-first public platform",
     "title": "Verified public information and confidential reporting",
-    "introduction": "The Garkuwa Platform is being developed to support verified news and public updates alongside a separate channel for confidential incident reporting. These services are not live yet.",
-    "primaryAction": "Read questions and answers",
-    "secondaryAction": "Get help",
+    "introduction": "The Garkuwa Platform is being developed to support verified news and public updates alongside a separate channel for confidential incident reporting. The reporting form is now available; news remains planned.",
+    "primaryAction": "Report an incident",
+    "secondaryAction": "Read questions and answers",
     "pillarsTitle": "Two planned public services",
     "pillarsIntroduction": "Information published for the public will remain separate from confidential reports reviewed by internal staff.",
     "newsTitle": "Verified news and updates",
     "newsDescription": "Announcements, advisories, warnings and public updates will be published after following a verification process.",
     "reportingTitle": "Confidential incident reporting",
-    "reportingDescription": "A dedicated form will allow citizens to share incident information without creating an account.",
+    "reportingDescription": "A dedicated form allows citizens to share incident information without creating an account.",
     "trustTitle": "How trust is being designed",
     "trustIntroduction": "The planned workflow reduces the personal information requested, but it does not make an absolute promise that risk can never occur.",
     "trustAccounts": "Citizen accounts will not be required to submit a report.",
@@ -38,8 +39,8 @@
     "stepsTitle": "How it will work",
     "stepOneTitle": "Read verified information",
     "stepOneDescription": "Review verified news, announcements and public advisories.",
-    "stepTwoTitle": "Submit when the form launches",
-    "stepTwoDescription": "Share relevant information through the confidential form once it is available.",
+    "stepTwoTitle": "Submit an incident report",
+    "stepTwoDescription": "Share relevant information through the confidential form without creating an account.",
     "stepThreeTitle": "Internal staff review",
     "stepThreeDescription": "Internal staff will review information through the administration system and take an appropriate next step.",
     "linksTitle": "More information",
@@ -64,11 +65,11 @@
       },
       {
         "question": "Will citizens need accounts?",
-        "answer": "No. The planned reporting workflow will not require a citizen account."
+        "answer": "No. Submitting a report does not require a citizen account."
       },
       {
         "question": "Will contact details be mandatory?",
-        "answer": "No. Providing contact details for possible follow-up will be optional."
+        "answer": "No. Providing contact details for possible follow-up is optional."
       },
       {
         "question": "Can a report be tracked publicly?",
@@ -88,26 +89,26 @@
       },
       {
         "question": "Are the news and reporting services live?",
-        "answer": "No. Both are under development and will be clearly identified when they become available."
+        "answer": "The incident reporting form is now available. Verified news and public updates remain under development."
       }
     ]
   },
   "help": {
     "eyebrow": "Using the platform",
     "title": "Help",
-    "introduction": "This page explains the available public pages and what the reporting process is expected to look like after launch.",
+    "introduction": "This page explains the available public pages and how to use the incident reporting form.",
     "sections": [
       {
         "title": "Using the public site",
-        "body": "Use the primary navigation to return home or open questions, help, about and contact pages. News and reporting services are not live yet."
+        "body": "Use the primary navigation to return home or open the report form, questions, help, about and contact pages. Verified news remains under development."
       },
       {
         "title": "Changing language",
         "body": "Choose Hausa or English in the header or footer. You will be taken to the equivalent version of the page you are reading."
       },
       {
-        "title": "The future reporting process",
-        "body": "After the form launches, a reporter will describe what happened and internal staff will review the information. An account will not be required."
+        "title": "The reporting process",
+        "body": "A reporter describes what happened through the form and internal staff review the information. An account is not required."
       },
       {
         "title": "Information to prepare",
@@ -122,7 +123,7 @@
         "body": "This platform is not a replacement for emergency services. For general support, use the official details once confirmed on the Contact us page."
       }
     ],
-    "reportingInactive": "The confidential reporting form is not active during this phase."
+    "reportingInactive": "The incident reporting form is available; it does not provide public report tracking."
   },
   "about": {
     "eyebrow": "Project purpose",
@@ -158,7 +159,7 @@
     "addressLabel": "Office address",
     "addressPlaceholder": "[Office address to be confirmed]",
     "sensitiveWarningTitle": "Do not send sensitive information through general contact channels",
-    "sensitiveWarning": "Do not send incident evidence, confidential information or emergency requests through these channels. A dedicated confidential reporting form will be provided separately.",
+    "sensitiveWarning": "Do not send incident evidence, confidential information or emergency requests through these channels. Use the dedicated incident reporting form instead.",
     "noForm": "No contact form or direct email integration is available during this phase."
   },
   "footer": {
@@ -176,11 +177,12 @@
   },
   "trust": {
     "title": "Trust and confidentiality notice",
-    "body": "The planned reporting workflow is designed to limit requested information. Do not send sensitive information through ordinary contact channels."
+    "body": "The reporting form is designed to limit requested information. Do not send sensitive information through ordinary contact channels."
   },
   "featureStatus": {
     "comingSoon": "Coming soon",
-    "notActive": "This service is not active yet."
+    "available": "Available",
+    "notActive": "The reporting form is available; verified news remains under development."
   },
   "metadata": {
     "homeTitle": "Garkuwa Platform",
@@ -192,7 +194,111 @@
     "aboutTitle": "About us",
     "aboutDescription": "The purpose, languages and planned workflows of the Garkuwa Platform.",
     "contactTitle": "Contact us",
-    "contactDescription": "Garkuwa Foundation contact placeholders and guidance on using appropriate channels."
+    "contactDescription": "Garkuwa Foundation contact placeholders and guidance on using appropriate channels.",
+    "reportIncidentTitle": "Report an incident",
+    "reportIncidentDescription": "Submit incident information confidentially without creating an account."
+  },
+  "public": {
+    "incidentReport": {
+      "eyebrow": "Confidential reporting",
+      "title": "Report an incident",
+      "introduction": "Use this form to send incident information to Garkuwa Foundation for internal review. You do not need to create an account.",
+      "privacyTitle": "Before you begin",
+      "privacyBody": "Contact details are optional. Avoid including personal information about yourself or others unless it is relevant to the incident. Information is handled carefully, but absolute confidentiality cannot be guaranteed.",
+      "emergencyTitle": "This is not an emergency service",
+      "emergencyBody": "If there is immediate danger, do not wait for a response from this platform. Contact the appropriate emergency authorities in your area.",
+      "outcomeNotice": "Foundation staff will review the report internally. Submission does not guarantee a particular outcome, and no public tracking is provided.",
+      "required": "Required",
+      "optional": "Optional",
+      "sections": {
+        "incident": "Incident information",
+        "details": "Additional incident details",
+        "coordinates": "Location coordinates (optional)",
+        "contact": "Contact details for follow-up (optional)"
+      },
+      "fields": {
+        "category": "Incident category",
+        "categoryHelp": "Choose the category that best matches what happened.",
+        "description": "Description",
+        "descriptionHelp": "Describe what happened, when and where it happened, and what you know. Avoid unnecessary personal information.",
+        "severity": "Your assessment of severity",
+        "severityHelp": "This is your best assessment and may be reviewed by staff.",
+        "incidentDate": "Incident date",
+        "incidentTime": "Incident time",
+        "locationDescription": "Location description",
+        "locationHelp": "An exact address is not required.",
+        "state": "State",
+        "lga": "Local government area",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "coordinatesHelp": "If known, provide both latitude and longitude. We will not request your device location automatically.",
+        "contactEnabled": "I am willing to be contacted for follow-up",
+        "contactHelp": "If selected, your contact details are encrypted before storage and used only for possible follow-up. Providing them means the report is not fully anonymous.",
+        "name": "Name",
+        "phone": "Phone number",
+        "email": "Email address",
+        "preferredContactMethod": "Preferred contact method",
+        "phoneMethod": "Phone",
+        "emailMethod": "Email",
+        "safeContactInstructions": "Safe contact instructions",
+        "safeContactInstructionsHelp": "For example, suitable times to call. Do not include passwords.",
+        "consent": "I consent to being contacted for follow-up about this report."
+      },
+      "severity": {
+        "LOW": "Low",
+        "MEDIUM": "Medium",
+        "HIGH": "High"
+      },
+      "categories": {
+        "placeholder": "Choose an incident category",
+        "loading": "Loading incident categories…",
+        "error": "Incident categories could not be loaded. Please try again.",
+        "empty": "No approved incident categories are available right now.",
+        "retry": "Try again"
+      },
+      "validation": {
+        "summaryTitle": "Please correct the following before submitting the report.",
+        "category": "Choose a valid incident category.",
+        "descriptionMin": "The description must contain at least 20 characters after outer spaces are removed.",
+        "descriptionMax": "The description must not exceed 5000 characters.",
+        "date": "Enter a valid date.",
+        "time": "Enter a valid time.",
+        "locationMax": "The location description must not exceed 500 characters.",
+        "stateMax": "The state must not exceed 100 characters.",
+        "lgaMax": "The local government area must not exceed 100 characters.",
+        "coordinatesPair": "Latitude and longitude must be provided together.",
+        "latitude": "Latitude must be a number between -90 and 90.",
+        "longitude": "Longitude must be a number between -180 and 180.",
+        "nameMax": "Name must not exceed 160 characters.",
+        "phone": "Enter a valid phone number.",
+        "email": "Enter a valid email address.",
+        "instructionsMax": "Safe contact instructions must not exceed 500 characters.",
+        "contactRequired": "Provide a phone number or email address when follow-up is enabled.",
+        "preferredPhone": "A phone number is required when phone is preferred.",
+        "preferredEmail": "An email address is required when email is preferred.",
+        "consent": "Consent is required before contact details can be stored."
+      },
+      "actions": {
+        "submit": "Submit report",
+        "submitting": "Submitting report…",
+        "home": "Return to homepage",
+        "another": "Submit another report"
+      },
+      "errors": {
+        "validation": "Some information is invalid. Review the highlighted fields.",
+        "payloadTooLarge": "The report is larger than the service can accept. Shorten it and try again.",
+        "unsupportedMedia": "This type of submission is not supported.",
+        "rateLimit": "There have been too many submission attempts. Wait before trying again.",
+        "network": "The reporting service could not be reached. Check your connection and try again.",
+        "timeout": "The submission took too long. Try again when your connection is stable.",
+        "server": "The report could not be received right now. Please try again later."
+      },
+      "success": {
+        "title": "Your report was received",
+        "body": "The report was received for internal review. No public tracking reference is provided."
+      },
+      "characterCount": "{current} of {maximum} characters"
+    }
   },
   "admin": {
     "title": "Administration area",
