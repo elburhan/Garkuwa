@@ -12,8 +12,9 @@ Hausa is the canonical public language at `/`; English is secondary at `/en`. Th
 - `packages/config`: strict TypeScript and shared ESLint configuration.
 - `infrastructure`: local PostGIS-capable PostgreSQL 17 server through Docker Compose.
 
-Only staff users, fixed staff roles, and user status are modeled. Business functionality will
-be added incrementally.
+The database models staff identity plus the first anonymous incident-submission domain. The
+incident endpoint is a backend foundation only; no public reporting form or staff moderation
+workflow exists yet. Business functionality will continue to be added incrementally.
 
 ## Prerequisites
 
@@ -117,6 +118,39 @@ infrastructure/        Local Docker Compose configuration
 The web application runs at `http://localhost:3000`; the health endpoint is
 `http://localhost:4000/api/health`.
 
+## Anonymous incident-submission foundation
+
+`POST /api/public/incidents` accepts a validated anonymous incident report and returns only a
+generic receipt acknowledgement. Citizens do not need accounts, and the API does not return an
+incident ID, internal case ID, status, tracking token, or tracking URL. There is no public case
+lookup or tracking workflow.
+
+The submission transaction verifies that the selected category is active, creates the incident
+with `NEW` status, optionally creates one separate `incident_contacts` record, and records the
+initial status-history transition. Optional contact data is stored only when the reporter
+provides a valid phone number or email address and explicitly consents to follow-up. Contact data
+is not part of the incident submission response.
+
+Optional contact fields are currently stored as ordinary database columns. Encryption at rest
+for those restricted fields must be designed, approved, and implemented before production use;
+this repository does not claim that application-level encryption exists. Production-approved
+rate limiting and anti-abuse controls are also required before launch. Incident descriptions,
+contact details, safe-contact instructions, and coordinates must not be written to application
+logs.
+
+No production category taxonomy is seeded. Garkuwa Foundation must approve Hausa and English
+category names and descriptions before launch. Tests create or mock their own narrowly scoped
+categories. The current endpoint has no media-upload support.
+
+The additive migration is named `add_incident_submission_domain`. To create an equivalent future
+migration for a reviewed schema change and then apply checked-in migrations:
+
+```sh
+pnpm db:migrate --name add_incident_submission_domain --create-only
+pnpm db:migrate
+pnpm db:status
+```
+
 ## Environment variables
 
 Create `.env` only at the repository root. Next.js and Prisma resolve that file from their
@@ -171,9 +205,9 @@ placeholder URLs. It does not start PostgreSQL or run migrations.
 
 ## Current scope
 
-This repository contains only application bootstrapping, bilingual routing, environment
-validation, database connectivity, local tooling, foundational tests, and CI. It intentionally
-does **not** implement incident reporting, citizen/reporter data, news, editorial workflows,
-authentication, JWTs, sessions, role guards, dashboards, analytics, uploads, object storage,
-notifications, Redis, queues, outbox events, audit-log business logic, Kubernetes,
-microservices, or Kafka.
+This repository contains application bootstrapping, bilingual public pages, environment
+validation, database connectivity, local tooling, foundational tests, and the anonymous incident
+submission backend described above. It intentionally does **not** implement a public reporting
+form, public tracking, reporter accounts, incident listing or moderation, staff authentication,
+news or editorial workflows, dashboards, analytics, maps, uploads, object storage, notifications,
+Redis, queues, outbox events, audit-log business logic, Kubernetes, microservices, or Kafka.
