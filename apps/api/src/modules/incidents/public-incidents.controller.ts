@@ -1,9 +1,10 @@
-import { Body, Controller, HttpCode, HttpStatus, Inject, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Inject, Post, UseGuards } from '@nestjs/common';
 
 import { createIncidentSchema, ZodValidationPipe } from './dto/create-incident.dto.js';
 import type { CreateIncidentDto } from './dto/create-incident.dto.js';
 import { IncidentSubmissionService } from './incident-submission.service.js';
 import type { IncidentSubmissionResponse } from './incident-submission.service.js';
+import { PublicIncidentAbuseGuard } from './public-incident-abuse.guard.js';
 
 @Controller('public/incidents')
 export class PublicIncidentsController {
@@ -12,9 +13,9 @@ export class PublicIncidentsController {
     private readonly incidentSubmissionService: IncidentSubmissionService,
   ) {}
 
-  // TODO(security): Add production-approved rate limiting and anti-abuse controls before launch.
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(PublicIncidentAbuseGuard)
   submit(
     @Body(new ZodValidationPipe(createIncidentSchema)) input: CreateIncidentDto,
   ): Promise<IncidentSubmissionResponse> {

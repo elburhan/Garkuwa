@@ -118,11 +118,11 @@ model Incident {
 model IncidentContact {
   id                      String                 @id @default(uuid()) @db.Uuid
   incidentId              String                 @unique @map("incident_id") @db.Uuid
-  name                    String?                @db.VarChar(160)
-  phone                   String?                @db.VarChar(32)
-  email                   String?                @db.VarChar(320)
+  name                    String?                @db.Text
+  phone                   String?                @db.Text
+  email                   String?                @db.Text
   preferredContactMethod  PreferredContactMethod @map("preferred_contact_method")
-  safeContactInstructions String?                @map("safe_contact_instructions") @db.VarChar(500)
+  safeContactInstructions String?                @map("safe_contact_instructions") @db.Text
   consentToContact        Boolean                @map("consent_to_contact")
   createdAt               DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
 

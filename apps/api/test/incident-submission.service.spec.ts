@@ -1,6 +1,7 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { jest } from '@jest/globals';
 
+import { ContactDataCryptoService } from '../src/common/security/contact-data-crypto.service.js';
 import type { PrismaService } from '../src/database/prisma.service.js';
 import {
   IncidentSeverity,
@@ -18,6 +19,7 @@ const baseSubmission: CreateIncidentDto = {
   severity: IncidentSeverity.MEDIUM,
   submissionLanguage: SubmissionLanguage.ha,
 };
+const contactDataCrypto = new ContactDataCryptoService(Buffer.alloc(32, 7));
 
 interface TransactionMock {
   incidentCategory: { findFirst: jest.Mock<() => Promise<{ id: string } | null>> };
@@ -55,7 +57,11 @@ function createPrismaMock(): { prisma: PrismaService; transaction: TransactionMo
 describe('IncidentSubmissionService', () => {
   it('creates an incident and initial history without a contact record', async () => {
     const { prisma, transaction } = createPrismaMock();
-    const service = new IncidentSubmissionService(prisma, () => 'GAR-2026-AAAABBBB');
+    const service = new IncidentSubmissionService(
+      prisma,
+      () => 'GAR-2026-AAAABBBB',
+      contactDataCrypto,
+    );
 
     const response = await service.submit(baseSubmission);
 
@@ -90,7 +96,11 @@ describe('IncidentSubmissionService', () => {
     [PreferredContactMethod.EMAIL, { email: 'reporter@example.test' }],
   ])('creates a separate %s contact record', async (method, details) => {
     const { prisma, transaction } = createPrismaMock();
-    const service = new IncidentSubmissionService(prisma, () => 'GAR-2026-AAAABBBB');
+    const service = new IncidentSubmissionService(
+      prisma,
+      () => 'GAR-2026-AAAABBBB',
+      contactDataCrypto,
+    );
 
     await service.submit({
       ...baseSubmission,
@@ -106,15 +116,54 @@ describe('IncidentSubmissionService', () => {
         incidentId,
         consentToContact: true,
         preferredContactMethod: method,
-        ...details,
+        phone: 'phone' in details ? expect.stringMatching(/^v1:/) : undefined,
+        email: 'email' in details ? expect.stringMatching(/^v1:/) : undefined,
       }),
     });
+  });
+
+  it('encrypts every supplied restricted contact field before Prisma insertion', async () => {
+    const { prisma, transaction } = createPrismaMock();
+    const service = new IncidentSubmissionService(
+      prisma,
+      () => 'GAR-2026-AAAABBBB',
+      contactDataCrypto,
+    );
+    const plaintext = {
+      name: 'Test Person',
+      phone: '+234 800 000 0000',
+      email: 'reporter@example.test',
+      safeContactInstructions: 'Use this fake channel only.',
+    };
+
+    await service.submit({
+      ...baseSubmission,
+      contact: {
+        ...plaintext,
+        preferredContactMethod: PreferredContactMethod.PHONE,
+        consentToContact: true,
+      },
+    });
+
+    const calls = transaction.incidentContact.create.mock.calls as unknown as Array<
+      [{ data: Record<string, unknown> }]
+    >;
+    const data = calls[0]![0].data;
+
+    for (const [field, value] of Object.entries(plaintext)) {
+      expect(data[field]).not.toBe(value);
+      expect(contactDataCrypto.decryptString(data[field] as string)).toBe(value);
+    }
   });
 
   it('rejects an inactive or missing category before creating an incident', async () => {
     const { prisma, transaction } = createPrismaMock();
     transaction.incidentCategory.findFirst.mockResolvedValue(null);
-    const service = new IncidentSubmissionService(prisma, () => 'GAR-2026-AAAABBBB');
+    const service = new IncidentSubmissionService(
+      prisma,
+      () => 'GAR-2026-AAAABBBB',
+      contactDataCrypto,
+    );
 
     await expect(service.submit(baseSubmission)).rejects.toThrow(BadRequestException);
     expect(transaction.incident.create).not.toHaveBeenCalled();
@@ -130,7 +179,7 @@ describe('IncidentSubmissionService', () => {
       .fn<() => string>()
       .mockReturnValueOnce('GAR-2026-AAAAAAAA')
       .mockReturnValueOnce('GAR-2026-BBBBBBBB');
-    const service = new IncidentSubmissionService(prisma, generateCaseId);
+    const service = new IncidentSubmissionService(prisma, generateCaseId, contactDataCrypto);
 
     await expect(service.submit(baseSubmission)).resolves.toMatchObject({ success: true });
 
@@ -141,5 +190,27 @@ describe('IncidentSubmissionService', () => {
       }),
     );
     expect(transaction.incidentStatusHistory.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('sanitizes unexpected database errors', async () => {
+    const { prisma, transaction } = createPrismaMock();
+    const sensitiveLibraryMessage = 'fake database detail containing submitted content';
+    transaction.incident.create.mockRejectedValue(new Error(sensitiveLibraryMessage));
+    const service = new IncidentSubmissionService(
+      prisma,
+      () => 'GAR-2026-AAAABBBB',
+      contactDataCrypto,
+    );
+
+    try {
+      await service.submit(baseSubmission);
+      throw new Error('Expected submission to fail.');
+    } catch (error) {
+      expect(error).toBeInstanceOf(InternalServerErrorException);
+      expect(String(error)).not.toContain(sensitiveLibraryMessage);
+      expect((error as InternalServerErrorException).message).toBe(
+        'The submission could not be completed safely.',
+      );
+    }
   });
 });

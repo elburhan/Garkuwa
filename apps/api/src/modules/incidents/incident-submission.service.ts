@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../database/prisma.service.js';
+import { ContactDataCryptoService } from '../../common/security/contact-data-crypto.service.js';
 import {
   IncidentStatus,
   PreferredContactMethod,
@@ -48,6 +49,8 @@ export class IncidentSubmissionService {
     private readonly prisma: PrismaService,
     @Inject(INCIDENT_CASE_ID_GENERATOR)
     private readonly generateCaseId: IncidentCaseIdGenerator,
+    @Inject(ContactDataCryptoService)
+    private readonly contactDataCrypto: ContactDataCryptoService,
   ) {}
 
   async submit(input: CreateIncidentDto): Promise<IncidentSubmissionResponse> {
@@ -71,7 +74,11 @@ export class IncidentSubmissionService {
           throw new InternalServerErrorException('The submission could not be completed safely.');
         }
 
-        throw error;
+        if (error instanceof BadRequestException) {
+          throw error;
+        }
+
+        throw new InternalServerErrorException('The submission could not be completed safely.');
       }
     }
 
@@ -112,14 +119,14 @@ export class IncidentSubmissionService {
         await transaction.incidentContact.create({
           data: {
             incidentId: incident.id,
-            name: input.contact.name,
-            phone: input.contact.phone,
-            email: input.contact.email,
+            name: this.encryptOptional(input.contact.name),
+            phone: this.encryptOptional(input.contact.phone),
+            email: this.encryptOptional(input.contact.email),
             preferredContactMethod:
               input.contact.preferredContactMethod === PreferredContactMethod.PHONE
                 ? PreferredContactMethod.PHONE
                 : PreferredContactMethod.EMAIL,
-            safeContactInstructions: input.contact.safeContactInstructions,
+            safeContactInstructions: this.encryptOptional(input.contact.safeContactInstructions),
             consentToContact: true,
           },
         });
@@ -134,5 +141,9 @@ export class IncidentSubmissionService {
         },
       });
     });
+  }
+
+  private encryptOptional(value: string | undefined): string | undefined {
+    return value ? this.contactDataCrypto.encryptString(value) : undefined;
   }
 }

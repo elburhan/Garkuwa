@@ -71,11 +71,7 @@ export const incidentContactSchema = z
 export const createIncidentSchema = z
   .object({
     categoryId: z.uuid(),
-    description: z
-      .string()
-      .min(20)
-      .max(5000)
-      .refine((value) => value === value.trim(), 'Description must not have outer whitespace.'),
+    description: z.string().trim().min(20).max(5000),
     incidentDate: z
       .string()
       .refine(isCalendarDate, 'Use a valid date in YYYY-MM-DD format.')

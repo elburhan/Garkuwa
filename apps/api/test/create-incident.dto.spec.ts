@@ -29,6 +29,28 @@ describe('createIncidentSchema', () => {
     expect(createIncidentSchema.safeParse(minimalSubmission).success).toBe(true);
   });
 
+  it('trims outer description whitespace before validating and storing the value', () => {
+    const result = createIncidentSchema.parse({
+      ...minimalSubmission,
+      description: '  A sufficiently detailed incident description.  ',
+    });
+
+    expect(result.description).toBe('A sufficiently detailed incident description.');
+  });
+
+  it('rejects a description that is empty after trimming', () => {
+    expect(
+      createIncidentSchema.safeParse({ ...minimalSubmission, description: '   \n\t  ' }).success,
+    ).toBe(false);
+  });
+
+  it('preserves internal paragraphs and multiple spaces', () => {
+    const description = 'First paragraph with details.\n\nSecond  paragraph with more details.';
+    const result = createIncidentSchema.parse({ ...minimalSubmission, description });
+
+    expect(result.description).toBe(description);
+  });
+
   it.each(invalidSubmissions)('rejects $reason', ({ submission }) => {
     expect(createIncidentSchema.safeParse(submission).success).toBe(false);
   });

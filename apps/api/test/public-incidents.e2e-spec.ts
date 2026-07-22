@@ -1,11 +1,13 @@
-import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 import { jest } from '@jest/globals';
 import { Test } from '@nestjs/testing';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 
 import { AppModule } from '../src/app.module.js';
+import { configureApiHttpHardening } from '../src/config/http-hardening.js';
 import { PrismaService } from '../src/database/prisma.service.js';
+import { PublicIncidentAbuseGuard } from '../src/modules/incidents/public-incident-abuse.guard.js';
 
 const categoryId = '6bd8a2d5-d369-49f6-bf37-27a35a983a7d';
 const incidentId = '09980491-d3a6-4f0b-a2f4-e97458ee4973';
@@ -17,7 +19,8 @@ const minimalSubmission = {
 };
 
 describe('Public incident submission endpoint', () => {
-  let app: INestApplication;
+  let app: NestExpressApplication;
+  let abuseGuard: PublicIncidentAbuseGuard;
   const transaction = {
     incidentCategory: {
       findFirst: jest.fn<() => Promise<{ id: string } | null>>(),
@@ -38,16 +41,19 @@ describe('Public incident submission endpoint', () => {
       .useValue(prisma)
       .compile();
 
-    app = moduleRef.createNestApplication();
+    app = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false });
+    configureApiHttpHardening(app);
     app.setGlobalPrefix('api');
     app.useGlobalPipes(
       new ValidationPipe({ forbidNonWhitelisted: true, transform: true, whitelist: true }),
     );
     await app.init();
+    abuseGuard = app.get(PublicIncidentAbuseGuard);
   });
 
   beforeEach(() => {
     jest.clearAllMocks();
+    abuseGuard.reset();
     transaction.incidentCategory.findFirst.mockResolvedValue({ id: categoryId });
     transaction.incident.create.mockResolvedValue({ id: incidentId });
     transaction.incidentContact.create.mockResolvedValue({ id: 'contact-id' });
@@ -95,6 +101,9 @@ describe('Public incident submission endpoint', () => {
       });
 
     expect(transaction.incidentContact.create).toHaveBeenCalledTimes(1);
+    expect(transaction.incidentContact.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ email: expect.stringMatching(/^v1:/) }),
+    });
   });
 
   it('returns 400 for invalid contact details', async () => {
@@ -126,5 +135,84 @@ describe('Public incident submission endpoint', () => {
       message: 'The selected incident category is unavailable.',
     });
     expect(response.text).not.toContain(categoryId);
+  });
+
+  it('returns 429 for the sixth submission from one client inside the window', async () => {
+    for (let index = 1; index <= 5; index += 1) {
+      await request(app.getHttpServer())
+        .post('/api/public/incidents')
+        .send({
+          ...minimalSubmission,
+          description: `A sufficiently detailed incident description number ${index}.`,
+        })
+        .expect(201);
+    }
+
+    const response = await request(app.getHttpServer())
+      .post('/api/public/incidents')
+      .send({
+        ...minimalSubmission,
+        description: 'A sufficiently detailed sixth incident description.',
+      })
+      .expect(429);
+
+    expect(response.body).toEqual({
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Too many incident submissions. Please try again later.',
+    });
+    expect(response.body).not.toHaveProperty('id');
+    expect(response.body).not.toHaveProperty('internalCaseId');
+    expect(response.body).not.toHaveProperty('contact');
+  });
+
+  it('rejects an identical recent submission without storing plaintext in limiter state', async () => {
+    await request(app.getHttpServer())
+      .post('/api/public/incidents')
+      .send(minimalSubmission)
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/api/public/incidents')
+      .send(minimalSubmission)
+      .expect(429);
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('requires application/json for incident submissions', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/public/incidents')
+      .set('Content-Type', 'text/plain')
+      .send(JSON.stringify(minimalSubmission))
+      .expect(415);
+
+    expect(response.body).toMatchObject({
+      statusCode: 415,
+      message: 'Content-Type must be application/json.',
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects JSON bodies larger than 100kb safely', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/public/incidents')
+      .send({ ...minimalSubmission, description: 'x'.repeat(101 * 1024) })
+      .expect(413);
+
+    expect(response.body).not.toHaveProperty('internalCaseId');
+    expect(response.body).not.toHaveProperty('contact');
+    expect(response.body).toEqual({
+      statusCode: 413,
+      error: 'Payload Too Large',
+      message: 'The JSON request body exceeds the 100kb limit.',
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('does not apply the incident submission limit to the health endpoint', async () => {
+    for (let index = 0; index < 7; index += 1) {
+      await request(app.getHttpServer()).get('/api/health').expect(200);
+    }
   });
 });

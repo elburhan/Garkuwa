@@ -131,12 +131,21 @@ initial status-history transition. Optional contact data is stored only when the
 provides a valid phone number or email address and explicitly consents to follow-up. Contact data
 is not part of the incident submission response.
 
-Optional contact fields are currently stored as ordinary database columns. Encryption at rest
-for those restricted fields must be designed, approved, and implemented before production use;
-this repository does not claim that application-level encryption exists. Production-approved
-rate limiting and anti-abuse controls are also required before launch. Incident descriptions,
-contact details, safe-contact instructions, and coordinates must not be written to application
-logs.
+The optional contact `name`, `phone`, `email`, and safe-contact instructions are encrypted before
+database insertion with AES-256-GCM, a random 12-byte IV per value, and a versioned authenticated
+ciphertext format. Incident IDs, contact preference, consent, and timestamps remain ordinary
+queryable fields. Decryption is not exposed through any API; it may only be added later through a
+restricted and audited staff workflow. Incident descriptions, contact details, ciphertext,
+safe-contact instructions, coordinates, encryption keys, and database connection strings must not
+be written to application logs.
+
+The endpoint accepts JSON only and uses a 100 KB JSON body limit. Its in-memory protection allows
+five submissions per client IP in 15 minutes and rejects an identical normalized submission from
+the same IP for five minutes. These controls are per API process and reset on restart. A shared
+limiter store is required before running multiple API replicas. Express proxy trust is explicitly
+disabled because the production proxy topology is not approved yet; deployment configuration must
+be reviewed before trusting any forwarded client-IP header. The HTTP server uses a 10-second
+request timeout. CAPTCHA or Turnstile remains a possible later escalation and is not implemented.
 
 No production category taxonomy is seeded. Garkuwa Foundation must approve Hausa and English
 category names and descriptions before launch. Tests create or mock their own narrowly scoped
@@ -159,6 +168,17 @@ configuration locations; the compiled API locates the workspace root by its
 `DATABASE_URL` and `WEB_ORIGIN` remain server-only. Both applications validate required values
 with Zod and fail with a readable error when configuration is missing or invalid. Never commit
 `.env`.
+
+`CONTACT_DATA_ENCRYPTION_KEY` is required by the API and must be canonical base64 representing
+exactly 32 random bytes. Generate a development key locally, place only its output in the ignored
+root `.env`, and use a separately managed production secret:
+
+```sh
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+```
+
+Do not commit generated keys or reuse development keys in production. Losing the key makes the
+encrypted contact values unrecoverable.
 
 ## Commands
 
