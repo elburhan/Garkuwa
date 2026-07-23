@@ -11,6 +11,7 @@ import {
   loadContactAccessHistory,
   loadAdminIncidentDetail,
   loadEligibleAssignees,
+  loadStaffNotes,
 } from '@/lib/admin-incidents-api';
 
 export const metadata: Metadata = { title: 'Cikakken rahoton lamari | Gidauniyar Garkuwa' };
@@ -43,10 +44,16 @@ export default async function AdminIncidentDetailPage({
     );
   }
   const mayAssign = principal.role === 'SUPER_ADMIN' || principal.role === 'ADMIN';
-  const [assignees, contactHistory] = mayAssign
-    ? await Promise.all([loadEligibleAssignees(), loadContactAccessHistory(incidentId)])
-    : [null, null];
-  if (assignees?.kind === 'unauthenticated' || contactHistory?.kind === 'unauthenticated') {
+  const [assignees, contactHistory, staffNotes] = await Promise.all([
+    mayAssign ? loadEligibleAssignees() : Promise.resolve(null),
+    mayAssign ? loadContactAccessHistory(incidentId) : Promise.resolve(null),
+    loadStaffNotes(incidentId),
+  ]);
+  if (
+    assignees?.kind === 'unauthenticated' ||
+    contactHistory?.kind === 'unauthenticated' ||
+    staffNotes.kind === 'unauthenticated'
+  ) {
     redirect(`/admin/login?lang=${locale}&reason=expired`);
   }
   return (
@@ -54,10 +61,12 @@ export default async function AdminIncidentDetailPage({
       locale={locale}
       incident={result.data.incident}
       role={principal.role as 'SUPER_ADMIN' | 'ADMIN' | 'MODERATOR' | 'ANALYST'}
+      principalId={principal.id}
       eligibleAssignees={assignees?.kind === 'success' ? assignees.data.users : []}
       contactAccessHistory={
         contactHistory?.kind === 'success' ? contactHistory.data.items : undefined
       }
+      staffNotes={staffNotes.kind === 'success' ? staffNotes.data.items : []}
     />
   );
 }

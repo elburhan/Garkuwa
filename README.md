@@ -283,8 +283,41 @@ API.
 
 Contact encryption-key rotation, recovery, production secret management, and operational access
 review remain deployment responsibilities. This phase adds no bulk reveal, export, reporter
-messaging, staff notes, arbitrary incident editing, deletion, media, maps, notifications,
+messaging, arbitrary incident editing, deletion, media, maps, notifications,
 analytics, or public tracking. It is not a claim of production readiness.
+
+### Internal incident staff notes
+
+Authenticated incident records expose a separate internal-notes workflow:
+
+- `GET /api/admin/incidents/:incidentId/notes` is available to `SUPER_ADMIN`, `ADMIN`,
+  `MODERATOR`, and `ANALYST`.
+- `POST /api/admin/incidents/:incidentId/notes` is available to `SUPER_ADMIN`, `ADMIN`, and
+  `MODERATOR`.
+- `PATCH /api/admin/incidents/:incidentId/notes/:noteId` permits an author to correct their own
+  note within 15 minutes. After that boundary, only `SUPER_ADMIN` and `ADMIN` may correct it and
+  must give a 10–1000 character administrative reason.
+- `POST /api/admin/incidents/:incidentId/notes/:noteId/redact` soft-redacts a note and is limited
+  to `SUPER_ADMIN` and `ADMIN`; a reason is mandatory.
+- `GET /api/admin/incidents/:incidentId/notes/:noteId/revisions` is the restricted immutable
+  revision view for `SUPER_ADMIN` and `ADMIN`.
+
+Note text is trimmed only at its outer edges, remains plain text, and is limited to 5000
+characters. Creation writes the note and revision 1 atomically without changing the incident,
+status, assignment, or incident `updatedAt`. Corrections use a conditional version update;
+stale versions return `409 Conflict`, and every successful correction adds a revision without
+changing authorship. Redaction increments the version and records the actor, reason, timestamp,
+and retained body in immutable history, while ordinary lists return only a tombstone and never
+the deleted body or reason. Repeated redaction is safely rejected; there is no restore or
+physical-delete endpoint.
+
+All note mutations require strict JSON, an exact trusted `Origin`, and a valid staff session.
+They are limited to 30 mutations per staff user per 15 minutes per API instance. A shared
+limiter store is required before horizontally scaling the API. Notes are internal and never
+loaded by public routes. Staff must not copy reporter contact information into notes; that data
+has a separate restricted, audited workflow. This phase includes no encryption claim for note
+text and no attachments, rich text, Markdown rendering, mentions, notifications, messaging,
+search, export, analytics, or public tracking. It is not a claim of production readiness.
 
 ## Environment variables
 
@@ -363,8 +396,8 @@ placeholder URLs. It does not start PostgreSQL or run migrations.
 This repository contains application bootstrapping, bilingual public pages, environment
 validation, database connectivity, local tooling, foundational tests, anonymous incident
 submission, secure staff authentication, controlled incident workflow, and restricted audited
-contact access described above. It intentionally does **not** implement public tracking, reporter
-accounts, bulk contact reveal, contact export, staff notes, arbitrary incident editing or
+contact access and internal staff notes described above. It intentionally does **not** implement
+public tracking, reporter accounts, bulk contact reveal, contact export, arbitrary incident editing or
 deletion, media uploads, device-location
 access, maps, production category management, news or editorial workflows, dashboards, analytics,
 object storage, notifications, Redis, queues, outbox events, audit-log business logic, Kubernetes,

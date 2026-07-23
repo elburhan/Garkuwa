@@ -65,6 +65,9 @@ model User {
   assignmentsTo         IncidentAssignmentHistory[]    @relation("IncidentAssignmentToUser")
   assignmentChanges     IncidentAssignmentHistory[]    @relation("IncidentAssignmentChangedBy")
   contactAccesses       IncidentContactAccessHistory[]
+  authoredIncidentNotes IncidentStaffNote[]            @relation("IncidentStaffNoteAuthor")
+  deletedIncidentNotes  IncidentStaffNote[]            @relation("IncidentStaffNoteDeletedBy")
+  noteRevisionChanges   IncidentStaffNoteRevision[]    @relation("IncidentStaffNoteRevisionChangedBy")
   sessions              StaffSession[]
 
   @@index([role, status])
@@ -133,6 +136,7 @@ model Incident {
   statusHistory        IncidentStatusHistory[]
   assignmentHistory    IncidentAssignmentHistory[]
   contactAccessHistory IncidentContactAccessHistory[]
+  staffNotes           IncidentStaffNote[]
 
   @@index([categoryId, status])
   @@index([status, severity, submittedAt])
@@ -211,4 +215,46 @@ model IncidentContactAccessHistory {
   @@index([incidentId, createdAt])
   @@index([accessedByUserId, createdAt])
   @@map("incident_contact_access_history")
+}
+
+model IncidentStaffNote {
+  id              String    @id @default(uuid()) @db.Uuid
+  incidentId      String    @map("incident_id") @db.Uuid
+  authorUserId    String    @map("author_user_id") @db.Uuid
+  body            String    @db.Text
+  version         Int       @default(1)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  editedAt        DateTime? @map("edited_at") @db.Timestamptz(3)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(3)
+  deletedByUserId String?   @map("deleted_by_user_id") @db.Uuid
+  deletionReason  String?   @map("deletion_reason") @db.VarChar(1000)
+
+  incident  Incident                    @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  author    User                        @relation("IncidentStaffNoteAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  deletedBy User?                       @relation("IncidentStaffNoteDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+  revisions IncidentStaffNoteRevision[]
+
+  @@index([incidentId, createdAt])
+  @@index([authorUserId, createdAt])
+  @@index([deletedAt])
+  @@map("incident_staff_notes")
+}
+
+model IncidentStaffNoteRevision {
+  id              String   @id @default(uuid()) @db.Uuid
+  noteId          String   @map("note_id") @db.Uuid
+  revisionNumber  Int      @map("revision_number")
+  body            String   @db.Text
+  changedByUserId String   @map("changed_by_user_id") @db.Uuid
+  changeReason    String?  @map("change_reason") @db.VarChar(1000)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  note      IncidentStaffNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  changedBy User              @relation("IncidentStaffNoteRevisionChangedBy", fields: [changedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([noteId, revisionNumber])
+  @@index([noteId, createdAt])
+  @@index([changedByUserId, createdAt])
+  @@map("incident_staff_note_revisions")
 }
