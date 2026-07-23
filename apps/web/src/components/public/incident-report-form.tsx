@@ -49,6 +49,8 @@ export function IncidentReportForm({
   const [formError, setFormError] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccessful, setIsSuccessful] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [attachmentError, setAttachmentError] = useState<string>();
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
   const submissionInProgress = useRef(false);
@@ -121,7 +123,8 @@ export function IncidentReportForm({
     setFieldErrors({});
     setFormError(undefined);
     try {
-      await submitIncidentReport(apiBaseUrl, result.data);
+      await submitIncidentReport(apiBaseUrl, result.data, { attachments });
+      setAttachments([]);
       setIsSuccessful(true);
     } catch (error) {
       setFormError(safeErrorMessage(error instanceof PublicApiError ? error.kind : 'server'));
@@ -136,6 +139,8 @@ export function IncidentReportForm({
     setFieldErrors({});
     setFormError(undefined);
     setIsSuccessful(false);
+    setAttachments([]);
+    setAttachmentError(undefined);
   };
 
   if (isSuccessful) {
@@ -521,6 +526,68 @@ export function IncidentReportForm({
         ) : null}
       </fieldset>
 
+      <fieldset className="form-section">
+        <legend>{messages.attachments.title}</legend>
+        <p id="attachments-help" className="field-help">
+          {messages.attachments.help}
+        </p>
+        <p className="field-help">{messages.attachments.privacy}</p>
+        <div className="form-field">
+          <label htmlFor="attachments">{messages.attachments.choose}</label>
+          <input
+            id="attachments"
+            type="file"
+            multiple
+            accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+            aria-describedby="attachments-help attachments-error"
+            aria-invalid={attachmentError ? true : undefined}
+            onChange={(event) => {
+              const selected = Array.from(event.target.files ?? []);
+              const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+              const total = selected.reduce((sum, file) => sum + file.size, 0);
+              const invalid =
+                selected.length > 5 ||
+                selected.some(
+                  (file) =>
+                    file.size === 0 || file.size > 10 * 1024 * 1024 || !allowed.has(file.type),
+                ) ||
+                total > 25 * 1024 * 1024;
+              if (invalid) {
+                setAttachmentError(messages.attachments.invalid);
+                setAttachments([]);
+                event.target.value = '';
+              } else {
+                setAttachmentError(undefined);
+                setAttachments(selected);
+              }
+            }}
+          />
+          <FieldError id="attachments-error" message={attachmentError} />
+        </div>
+        {attachments.length > 0 ? (
+          <ul className="selected-file-list">
+            {attachments.map((file, index) => (
+              <li key={`${file.name}-${file.size}-${index}`}>
+                <span>
+                  {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MiB)
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setAttachments((current) =>
+                      current.filter((_, itemIndex) => itemIndex !== index),
+                    )
+                  }
+                  aria-label={`${messages.attachments.remove}: ${file.name}`}
+                >
+                  {messages.attachments.remove}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </fieldset>
+
       <div className="submission-notice">
         <p>{messages.outcomeNotice}</p>
       </div>
@@ -529,7 +596,11 @@ export function IncidentReportForm({
         type="submit"
         disabled={isSubmitting || categoryState !== 'ready' || categories.length === 0}
       >
-        {isSubmitting ? messages.actions.submitting : messages.actions.submit}
+        {isSubmitting
+          ? attachments.length > 0
+            ? messages.attachments.uploading
+            : messages.actions.submitting
+          : messages.actions.submit}
       </button>
     </form>
   );

@@ -72,19 +72,34 @@ function errorKindForStatus(status: number): PublicApiErrorKind {
 export async function submitIncidentReport(
   baseUrl: string,
   payload: IncidentSubmissionPayload,
-  options: { fetcher?: typeof fetch; timeoutMs?: number } = {},
+  options: { fetcher?: typeof fetch; timeoutMs?: number; attachments?: readonly File[] } = {},
 ): Promise<void> {
   const fetcher = options.fetcher ?? fetch;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 12_000);
 
   try {
-    const response = await fetcher(apiUrl(baseUrl, 'public/incidents'), {
-      method: 'POST',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
+    const attachments = options.attachments ?? [];
+    const formData = new FormData();
+    if (attachments.length > 0) {
+      formData.set('report', JSON.stringify(payload));
+      for (const file of attachments) formData.append('attachments', file);
+    }
+    const response = await fetcher(
+      apiUrl(
+        baseUrl,
+        attachments.length > 0 ? 'public/incidents/with-attachments' : 'public/incidents',
+      ),
+      {
+        method: 'POST',
+        headers:
+          attachments.length > 0
+            ? { Accept: 'application/json' }
+            : { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: attachments.length > 0 ? formData : JSON.stringify(payload),
+        signal: controller.signal,
+      },
+    );
     if (!response.ok) throw new PublicApiError(errorKindForStatus(response.status));
   } catch (error) {
     if (error instanceof PublicApiError) throw error;

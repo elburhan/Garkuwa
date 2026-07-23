@@ -293,6 +293,22 @@
         "timeout": "The submission took too long. Try again when your connection is stable.",
         "server": "The report could not be received right now. Please try again later."
       },
+      "attachments": {
+        "title": "Evidence attachments (optional)",
+        "help": "Choose up to 5 JPEG, PNG, WebP or PDF files. Each file may be up to 10 MiB and the combined total may be up to 25 MiB.",
+        "privacy": "Files may contain sensitive technical metadata. Upload only evidence needed for review and avoid unnecessary personal documents. Files remain private and await security review before staff content access.",
+        "choose": "Choose evidence files",
+        "remove": "Remove file",
+        "invalid": "Check the file type, file count and size limits before continuing.",
+        "unsupported": "This file type is not supported.",
+        "invalidContent": "The file content does not match an approved format.",
+        "fileTooLarge": "A file exceeds the 10 MiB limit.",
+        "totalTooLarge": "The selected files exceed the 25 MiB combined limit.",
+        "tooMany": "Select no more than 5 files.",
+        "zeroByte": "Empty files cannot be submitted.",
+        "uploading": "Uploading report and evidence…",
+        "uploadFailed": "The evidence could not be uploaded safely."
+      },
       "success": {
         "title": "Your report was received",
         "body": "The report was received for internal review. No public tracking reference is provided."
@@ -459,6 +475,22 @@
         "staleVersion": "This note changed elsewhere. Refresh the page before trying again.",
         "genericError": "The note action could not be completed safely. Try again.",
         "cancel": "Cancel"
+      },
+      "attachments": {
+        "title": "Private evidence attachments",
+        "noAttachments": "No evidence attachments were submitted.",
+        "type": "Verified type",
+        "size": "File size",
+        "dimensions": "Dimensions",
+        "pageCount": "PDF page count",
+        "uploadedAt": "Uploaded",
+        "QUARANTINED": "Awaiting security review",
+        "AVAILABLE": "Available",
+        "REJECTED": "Unavailable",
+        "content": "Download evidence",
+        "metadataOnly": "Your role permits metadata review only.",
+        "privateNotice": "Evidence is private, staff-only content. Access is authorized and audited.",
+        "notExtracted": "Not extracted"
       },
       "contactAccess": {
         "title": "Restricted contact information",

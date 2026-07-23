@@ -12,6 +12,7 @@ import {
   loadAdminIncidentDetail,
   loadEligibleAssignees,
   loadStaffNotes,
+  loadIncidentAttachments,
 } from '@/lib/admin-incidents-api';
 
 export const metadata: Metadata = { title: 'Cikakken rahoton lamari | Gidauniyar Garkuwa' };
@@ -44,15 +45,17 @@ export default async function AdminIncidentDetailPage({
     );
   }
   const mayAssign = principal.role === 'SUPER_ADMIN' || principal.role === 'ADMIN';
-  const [assignees, contactHistory, staffNotes] = await Promise.all([
+  const [assignees, contactHistory, staffNotes, attachments] = await Promise.all([
     mayAssign ? loadEligibleAssignees() : Promise.resolve(null),
     mayAssign ? loadContactAccessHistory(incidentId) : Promise.resolve(null),
     loadStaffNotes(incidentId),
+    loadIncidentAttachments(incidentId),
   ]);
   if (
     assignees?.kind === 'unauthenticated' ||
     contactHistory?.kind === 'unauthenticated' ||
-    staffNotes.kind === 'unauthenticated'
+    staffNotes.kind === 'unauthenticated' ||
+    attachments.kind === 'unauthenticated'
   ) {
     redirect(`/admin/login?lang=${locale}&reason=expired`);
   }
@@ -67,6 +70,7 @@ export default async function AdminIncidentDetailPage({
         contactHistory?.kind === 'success' ? contactHistory.data.items : undefined
       }
       staffNotes={staffNotes.kind === 'success' ? staffNotes.data.items : []}
+      attachments={attachments.kind === 'success' ? attachments.data.items : []}
     />
   );
 }

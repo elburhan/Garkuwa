@@ -5,10 +5,12 @@ import {
   Header,
   Inject,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 
@@ -56,6 +58,11 @@ import {
 } from '../staff-notes/dto/staff-note.dto.js';
 import { IncidentStaffNotesService } from '../staff-notes/incident-staff-notes.service.js';
 import { StaffNoteRateLimitGuard } from '../staff-notes/staff-note-rate-limit.guard.js';
+import { IncidentAttachmentsService } from '../attachments/incident-attachments.service.js';
+
+interface AttachmentHttpResponse extends NodeJS.WritableStream {
+  set(headers: Record<string, string>): void;
+}
 
 const incidentViewerRoles = [
   StaffRole.SUPER_ADMIN,
@@ -75,6 +82,8 @@ export class AdminIncidentsController {
     private readonly contactAccess: IncidentContactAccessService,
     @Inject(IncidentStaffNotesService)
     private readonly staffNotes: IncidentStaffNotesService,
+    @Inject(IncidentAttachmentsService)
+    private readonly attachments: IncidentAttachmentsService,
   ) {}
 
   @Get()
@@ -203,5 +212,39 @@ export class AdminIncidentsController {
   @StaffRoles(StaffRole.SUPER_ADMIN, StaffRole.ADMIN)
   noteRevisions(@Param(new StaffNoteZodPipe(staffNoteParamsSchema)) parameters: StaffNoteParams) {
     return this.staffNotes.revisions(parameters.incidentId, parameters.noteId);
+  }
+
+  @Get(':incidentId/attachments')
+  @Header('Cache-Control', 'private, no-store')
+  listAttachments(
+    @Param(new AdminIncidentsZodPipe(incidentIdParamSchema)) parameters: IncidentIdParam,
+  ) {
+    return this.attachments.list(parameters.incidentId);
+  }
+
+  @Get(':incidentId/attachments/:attachmentId/content')
+  @StaffRoles(StaffRole.SUPER_ADMIN, StaffRole.ADMIN, StaffRole.MODERATOR)
+  async attachmentContent(
+    @Param('incidentId', new ParseUUIDPipe()) incidentId: string,
+    @Param('attachmentId', new ParseUUIDPipe()) attachmentId: string,
+    @Req() request: StaffAuthRequest,
+    @Res() response: AttachmentHttpResponse,
+  ): Promise<void> {
+    const content = await this.attachments.content(
+      incidentId,
+      attachmentId,
+      request.staffPrincipal!,
+    );
+    const safeFilename = content.filename.replace(/["\\\r\n]/g, '_');
+    response.set({
+      'Cache-Control': 'private, no-store',
+      'Content-Type': content.contentType,
+      'Content-Length': String(content.contentLength),
+      'Content-Disposition': `attachment; filename="${safeFilename}"`,
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; sandbox",
+      'Accept-Ranges': 'none',
+    });
+    content.stream.pipe(response);
   }
 }

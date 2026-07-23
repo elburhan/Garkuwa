@@ -37,6 +37,8 @@ const apiEnvironmentSchema = z
       message: 'must be canonical base64 that decodes to exactly 32 bytes',
     }),
     STAFF_SESSION_COOKIE_SECURE: z.enum(['true', 'false']).transform((value) => value === 'true'),
+    INCIDENT_STORAGE_DRIVER: z.literal('filesystem'),
+    INCIDENT_STORAGE_FILESYSTEM_ROOT: z.string().trim().min(1),
   })
   .superRefine((environment, context) => {
     if (environment.NODE_ENV === 'production' && !environment.STAFF_SESSION_COOKIE_SECURE) {

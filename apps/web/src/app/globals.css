@@ -1331,6 +1331,29 @@ h3 {
   margin-top: 1rem;
 }
 
+.selected-file-list,
+.admin-attachment-list {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.selected-file-list li,
+.admin-attachment-list li {
+  padding: 0.9rem;
+  border: 0.0625rem solid var(--color-border);
+  border-radius: var(--radius-small);
+}
+
+.selected-file-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .admin-staff-notes [tabindex='-1']:focus {
   outline: 0.2rem solid var(--color-focus);
   outline-offset: 0.25rem;

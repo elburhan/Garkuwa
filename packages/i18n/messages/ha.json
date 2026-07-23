@@ -293,6 +293,22 @@
         "timeout": "Aika rahoton ya ɗauki lokaci mai tsawo. Ka sake gwadawa idan haɗin ya daidaita.",
         "server": "Ba a iya karɓar rahoton a yanzu. Ka sake gwadawa daga baya."
       },
+      "attachments": {
+        "title": "Fayilolin shaida (zaɓi ne)",
+        "help": "Zaɓi fayilolin JPEG, PNG, WebP ko PDF har guda 5. Kowane fayil bai wuce MiB 10 ba, jimillarsu kuma ba ta wuce MiB 25 ba.",
+        "privacy": "Fayiloli na iya ɗauke da bayanan fasaha masu sirri. Tura shaidar da ake buƙata kawai, kuma a guji takardun sirri marasa muhimmanci. Fayiloli za su kasance na sirri har sai an kammala bitar tsaro.",
+        "choose": "Zaɓi fayilolin shaida",
+        "remove": "Cire fayil",
+        "invalid": "Duba nau’in fayil, adadin fayiloli da iyakar girmansu kafin ci gaba.",
+        "unsupported": "Ba a yarda da wannan nau’in fayil ba.",
+        "invalidContent": "Abin da ke cikin fayil bai dace da nau’in da aka amince ba.",
+        "fileTooLarge": "Wani fayil ya wuce iyakar MiB 10.",
+        "totalTooLarge": "Jimillar fayilolin ta wuce iyakar MiB 25.",
+        "tooMany": "Kada a zaɓi fayiloli fiye da guda 5.",
+        "zeroByte": "Ba a iya tura fayil marar komai ba.",
+        "uploading": "Ana tura rahoto da fayilolin shaida…",
+        "uploadFailed": "Ba a iya tura fayilolin shaidar cikin aminci ba."
+      },
       "success": {
         "title": "An karɓi rahotonka",
         "body": "An karɓi rahoton domin dubawa a cikin gida. Ba a samar da lambar bibiyar jama'a ba."
@@ -459,6 +475,22 @@
         "staleVersion": "An sauya wannan bayani a wani wuri. Sabunta shafin kafin sake gwadawa.",
         "genericError": "Ba a iya kammala aikin bayanin cikin aminci ba. Sake gwadawa.",
         "cancel": "Soke"
+      },
+      "attachments": {
+        "title": "Fayilolin shaida na sirri",
+        "noAttachments": "Ba a tura wani fayil na shaida ba.",
+        "type": "Nau’in da aka tabbatar",
+        "size": "Girman fayil",
+        "dimensions": "Faɗi da tsawo",
+        "pageCount": "Adadin shafukan PDF",
+        "uploadedAt": "Lokacin turawa",
+        "QUARANTINED": "Ana jiran bitar tsaro",
+        "AVAILABLE": "A shirye yake",
+        "REJECTED": "Ba ya samuwa",
+        "content": "Sauke shaida",
+        "metadataOnly": "Matsayinka ya ba ka izinin duba bayanan fayil kawai.",
+        "privateNotice": "Shaida bayanin sirri ne na ma’aikata kawai. Ana ba da izini kuma ana adana tarihin buɗewa.",
+        "notExtracted": "Ba a fitar ba"
       },
       "contactAccess": {
         "title": "Bayanan tuntuɓa masu ƙayyadadden izini",
