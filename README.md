@@ -181,8 +181,7 @@ pnpm db:status
 ## Staff authentication foundation
 
 The unprefixed `/admin/login` route provides Hausa and English staff sign-in, while `/admin` is a
-minimal protected landing page. It contains no moderation queue, incident details, dashboard
-metrics, contact reveal, or editorial tooling.
+minimal protected landing page.
 
 The API exposes `POST /api/auth/staff/login`, `GET /api/auth/staff/me`, and
 `POST /api/auth/staff/logout`. Staff passwords use Argon2id with 19 MiB memory, two iterations,
@@ -217,6 +216,28 @@ history where possible. The command never prints the password, refuses unknown u
 temporary lock, and revokes existing sessions. There is no registration, password reset, email
 verification, MFA, OAuth, social login, remember-me session, or refresh token yet. MFA and password
 recovery require separate reviewed workflows before production readiness.
+
+## Read-only incident moderation
+
+Authenticated staff can use `/admin/incidents` and `/admin/incidents/:incidentId` to review the
+incident queue and individual incident records. The corresponding API endpoints are
+`GET /api/admin/incidents` and `GET /api/admin/incidents/:incidentId`.
+
+Access is limited to `SUPER_ADMIN`, `ADMIN`, `MODERATOR`, and `ANALYST`. Authenticated `EDITOR`
+users receive `403 Forbidden`, and unauthenticated requests receive `401 Unauthorized`.
+Authorization is enforced by the API in addition to the web interface.
+
+The queue defaults to page 1 with 20 records and enforces a maximum page size of 100. Supported
+filters are status, severity, category, submission language, state, LGA, submitted-date range, and
+a bounded search over case ID and location fields. Sorting is limited to newest, oldest, severity,
+or status, with a deterministic incident-ID secondary sort. There is no unrestricted export.
+
+The detail view includes the report text and ordered status history, rendered as plain text.
+Both views use explicit Prisma selections and never select the incident contact relation,
+encrypted contact values, staff security fields, or session data. This phase is strictly
+read-only: it adds no contact reveal, decryption, status change, assignment change, notes,
+duplicate marking, editing, deletion, bulk action, media, analytics, or public tracking. It is not
+a claim of production readiness.
 
 ## Environment variables
 
@@ -293,10 +314,11 @@ placeholder URLs. It does not start PostgreSQL or run migrations.
 ## Current scope
 
 This repository contains application bootstrapping, bilingual public pages, environment
-validation, database connectivity, local tooling, foundational tests, and the anonymous incident
-submission backend and public form described above. It intentionally does **not** implement public
-tracking, reporter accounts, media uploads, device-location access, maps, a production category
-management interface, incident listing or moderation, staff authentication, news or editorial
-workflows, dashboards, analytics, object storage, notifications, Redis, queues, outbox events,
-audit-log business logic, Kubernetes, microservices, or Kafka. The form is an incremental
-foundation and is not a claim of production readiness.
+validation, database connectivity, local tooling, foundational tests, anonymous incident
+submission, secure staff authentication, and the read-only incident review interface described
+above. It intentionally does **not** implement public tracking, reporter accounts, contact reveal,
+workflow actions, staff notes, incident editing or deletion, media uploads, device-location
+access, maps, production category management, news or editorial workflows, dashboards, analytics,
+object storage, notifications, Redis, queues, outbox events, audit-log business logic, Kubernetes,
+microservices, or Kafka. The platform remains an incremental foundation and is not a claim of
+production readiness.

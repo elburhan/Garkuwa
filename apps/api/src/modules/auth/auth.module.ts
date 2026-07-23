@@ -9,6 +9,7 @@ import { PasswordHasherService } from './password-hasher.service.js';
 import { StaffLoginRateLimitGuard } from './staff-login-rate-limit.guard.js';
 import { StaffSessionGuard } from './staff-session.guard.js';
 import { StaffSessionService } from './staff-session.service.js';
+import { StaffRolesGuard } from './staff-roles.guard.js';
 
 @Module({
   controllers: [StaffAuthController],
@@ -17,11 +18,12 @@ import { StaffSessionService } from './staff-session.service.js';
     StaffAuthenticationService,
     StaffSessionService,
     StaffSessionGuard,
+    StaffRolesGuard,
     StaffAuthOriginGuard,
     JsonContentTypeGuard,
     StaffLoginRateLimitGuard,
     { provide: STAFF_AUTH_CLOCK, useValue: Date.now },
   ],
-  exports: [StaffSessionGuard, StaffSessionService],
+  exports: [StaffSessionGuard, StaffSessionService, StaffRolesGuard],
 })
 export class AuthModule {}

@@ -326,12 +326,97 @@
       "eyebrow": "An tabbatar da zaman ma'aikaci",
       "title": "Sashen gudanarwa",
       "welcome": "Barka da zuwa, {name}.",
-      "description": "An kammala tushen shiga na ma'aikata. Ba a ƙara kayan gudanar da rahoto ko wasu ayyukan dashboard ba tukuna.",
+      "description": "Yi amfani da jerin rahotanni na karantawa kawai domin duba rahotannin da aka tura. Ba a buɗe sauya aiki ko bayanan tuntuɓa ba.",
       "email": "Imel",
       "role": "Matsayi",
+      "incidentQueue": "Buɗe jerin rahotanni",
       "logout": "Fita",
       "loggingOut": "Ana fita…",
       "logoutError": "Ba a iya kammala fita ba. Sake gwadawa."
+    },
+    "incidents": {
+      "queue": {
+        "eyebrow": "Dubawa ta karantawa kawai",
+        "title": "Jerin rahotannin lamura",
+        "description": "Duba rahotannin da aka tura ba tare da sauya matsayi, wanda aka ɗora wa aiki, ko bayanan tuntuɓa na sirri ba.",
+        "resultCount": "Rahotanni {count}",
+        "filters": "Tace rahotanni",
+        "applyFilters": "Aiwatar da tacewa",
+        "clearFilters": "Share tacewa",
+        "search": "Nemo lambar rahoto ko wuri",
+        "status": "Matsayi",
+        "severity": "Tsananin lamari",
+        "category": "Rukuni",
+        "allCategories": "Dukkan rukunai",
+        "submissionLanguage": "Harshen rahoto",
+        "state": "Jiha",
+        "lga": "Ƙaramar hukuma",
+        "dateFrom": "An tura daga",
+        "dateTo": "An tura zuwa",
+        "sort": "Jere bisa",
+        "all": "Duka",
+        "caseId": "Lambar rahoto",
+        "location": "Wuri",
+        "submitted": "Lokacin turawa",
+        "assigned": "Wanda aka ɗora wa aiki",
+        "unassigned": "Ba a ɗora wa kowa ba",
+        "noResults": "Babu rahoton da ya dace da waɗannan tace-tacen.",
+        "error": "Ba a iya loda jerin rahotannin cikin aminci ba. Sake gwadawa.",
+        "loading": "Ana loda jerin rahotanni…",
+        "previous": "Shafin baya",
+        "next": "Shafi na gaba",
+        "page": "Shafi na {page} cikin {total}",
+        "openIncident": "Buɗe rahoto {caseId}"
+      },
+      "detail": {
+        "eyebrow": "Bayanan rahoton lamari",
+        "title": "Cikakken rahoton lamari",
+        "back": "Koma jerin rahotanni",
+        "readOnly": "Wannan shafi na karantawa kawai ne. Babu bayanan tuntuɓa ko kayan sauya aiki.",
+        "description": "Bayanin rahoto",
+        "incidentDate": "Ranar lamari",
+        "incidentTime": "Lokacin lamari",
+        "locationDescription": "Bayanin wuri",
+        "coordinates": "Ma'aunin wuri",
+        "submittedAt": "Lokacin turawa",
+        "updatedAt": "Sabuntawa ta ƙarshe",
+        "closedAt": "Lokacin rufewa",
+        "statusHistory": "Tarihin matsayi",
+        "changedBy": "Wanda ya sauya",
+        "system": "Tsarin kwamfuta",
+        "comment": "Bayani",
+        "noHistory": "Babu tarihin matsayi.",
+        "notFound": "Ba a sami rahoton da aka nema ba.",
+        "error": "Ba a iya loda rahoton cikin aminci ba. Sake gwadawa."
+      },
+      "accessDenied": {
+        "title": "Ba ka da izinin shiga",
+        "description": "Matsayinka na ma'aikaci bai ba ka izinin duba rahotannin lamura ba.",
+        "back": "Koma sashen gudanarwa"
+      },
+      "status": {
+        "NEW": "Sabo",
+        "UNDER_REVIEW": "Ana dubawa",
+        "ACTIONED": "An ɗauki mataki",
+        "CLOSED": "An rufe",
+        "REJECTED": "An ƙi"
+      },
+      "severity": {
+        "LOW": "Ƙarami",
+        "MEDIUM": "Matsakaici",
+        "HIGH": "Babba"
+      },
+      "language": {
+        "ha": "Hausa",
+        "en": "Turanci"
+      },
+      "sort": {
+        "newest": "Sabbi da farko",
+        "oldest": "Tsofaffi da farko",
+        "severity": "Tsananin lamari",
+        "status": "Matsayi"
+      },
+      "notProvided": "Ba a bayar ba"
     }
   }
 }

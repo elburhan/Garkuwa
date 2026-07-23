@@ -11,6 +11,7 @@ export function AdminLanding({
   apiBaseUrl,
 }: Readonly<{ locale: Locale; principal: AdminPrincipal; apiBaseUrl: string }>) {
   const messages = getMessages(locale).admin;
+  const canViewIncidents = principal.role !== 'EDITOR';
   return (
     <main className="admin-landing content-width section-spacing" lang={locale}>
       <div className="admin-landing-header">
@@ -41,6 +42,13 @@ export function AdminLanding({
             <dd>{principal.role.replaceAll('_', ' ')}</dd>
           </div>
         </dl>
+        {canViewIncidents ? (
+          <p>
+            <Link className="button button-primary" href={`/admin/incidents?lang=${locale}`}>
+              {messages.landing.incidentQueue}
+            </Link>
+          </p>
+        ) : null}
         <AdminLogoutButton locale={locale} apiBaseUrl={apiBaseUrl} />
       </section>
     </main>

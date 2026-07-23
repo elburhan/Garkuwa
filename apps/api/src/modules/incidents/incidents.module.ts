@@ -6,6 +6,9 @@ import {
 } from '../../common/security/contact-data-crypto.service.js';
 import { decodeContactDataEncryptionKey } from '../../common/security/contact-data-key.js';
 import { getApiEnvironment } from '../../config/environment.js';
+import { AuthModule } from '../auth/auth.module.js';
+import { AdminIncidentsController } from './admin/admin-incidents.controller.js';
+import { AdminIncidentsService } from './admin/admin-incidents.service.js';
 import { generateIncidentCaseId } from './incident-case-id.js';
 import { IncidentCategoriesService } from './incident-categories.service.js';
 import {
@@ -17,8 +20,14 @@ import { PublicIncidentCategoriesController } from './public-incident-categories
 import { PUBLIC_INCIDENT_CLOCK, PublicIncidentAbuseGuard } from './public-incident-abuse.guard.js';
 
 @Module({
-  controllers: [PublicIncidentCategoriesController, PublicIncidentsController],
+  imports: [AuthModule],
+  controllers: [
+    PublicIncidentCategoriesController,
+    PublicIncidentsController,
+    AdminIncidentsController,
+  ],
   providers: [
+    AdminIncidentsService,
     IncidentCategoriesService,
     IncidentSubmissionService,
     ContactDataCryptoService,
