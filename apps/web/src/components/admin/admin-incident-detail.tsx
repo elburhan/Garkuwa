@@ -1,12 +1,21 @@
 import Link from 'next/link';
 
 import { getMessages, type Locale } from '@/i18n';
-import type { AdminIncidentDetail } from '@/lib/admin-incidents-api';
+import type { AdminIncidentDetail, EligibleAssignee } from '@/lib/admin-incidents-api';
+
+import { AdminIncidentWorkflowControls } from './admin-incident-workflow-controls';
 
 export function AdminIncidentDetailView({
   locale,
   incident,
-}: Readonly<{ locale: Locale; incident: AdminIncidentDetail }>) {
+  role,
+  eligibleAssignees = [],
+}: Readonly<{
+  locale: Locale;
+  incident: AdminIncidentDetail;
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'MODERATOR' | 'ANALYST';
+  eligibleAssignees?: readonly EligibleAssignee[];
+}>) {
   const messages = getMessages(locale).admin.incidents;
   const dateFormatter = new Intl.DateTimeFormat(locale === 'ha' ? 'ha-NG' : 'en-NG', {
     dateStyle: 'medium',
@@ -24,7 +33,7 @@ export function AdminIncidentDetailView({
         <div>
           <p className="eyebrow">{messages.detail.eyebrow}</p>
           <h1>{incident.internalCaseId}</h1>
-          <p className="admin-read-only-notice">{messages.detail.readOnly}</p>
+          <p className="admin-read-only-notice">{messages.detail.workflowScope}</p>
         </div>
         <nav
           aria-label={getMessages(locale).admin.login.languageLabel}
@@ -128,6 +137,16 @@ export function AdminIncidentDetailView({
         </dl>
       </section>
 
+      <AdminIncidentWorkflowControls
+        locale={locale}
+        incidentId={incident.id}
+        status={incident.status}
+        assignedToUserId={incident.assignedTo?.id ?? null}
+        updatedAt={incident.updatedAt}
+        role={role}
+        eligibleAssignees={eligibleAssignees}
+      />
+
       <section className="admin-detail-card" aria-labelledby="status-history-title">
         <h2 id="status-history-title">{messages.detail.statusHistory}</h2>
         {incident.statusHistory.length === 0 ? (
@@ -145,6 +164,41 @@ export function AdminIncidentDetailView({
                 <p>
                   <strong>{messages.detail.changedBy}:</strong>{' '}
                   {history.changedBy?.displayName ?? messages.detail.system}
+                </p>
+                {history.comment ? (
+                  <p>
+                    <strong>{messages.detail.comment}:</strong> {history.comment}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      <section className="admin-detail-card" aria-labelledby="assignment-history-title">
+        <h2 id="assignment-history-title">{messages.workflow.assignmentHistory}</h2>
+        {incident.assignmentHistory.length === 0 ? (
+          <p>{messages.workflow.noAssignmentHistory}</p>
+        ) : (
+          <ol className="admin-status-history">
+            {incident.assignmentHistory.map((history, index) => (
+              <li key={`${history.changedAt}-${index}`}>
+                <p>
+                  <strong>{messages.workflow.changedFrom}:</strong>{' '}
+                  {history.fromUser?.displayName ?? messages.workflow.noPreviousAssignee}
+                </p>
+                <p>
+                  <strong>{messages.workflow.changedTo}:</strong>{' '}
+                  {history.toUser?.displayName ?? messages.workflow.unassigned}
+                </p>
+                <p>
+                  <strong>{messages.workflow.changedBy}:</strong> {history.changedBy.displayName}
+                </p>
+                <p>
+                  <time dateTime={history.changedAt}>
+                    {dateFormatter.format(new Date(history.changedAt))}
+                  </time>
                 </p>
                 {history.comment ? (
                   <p>

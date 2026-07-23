@@ -49,6 +49,16 @@ export const adminIncidentDetailSelect = {
       changedByUser: { select: { id: true, displayName: true } },
     },
   },
+  assignmentHistory: {
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    select: {
+      comment: true,
+      createdAt: true,
+      fromUser: { select: { id: true, displayName: true } },
+      toUser: { select: { id: true, displayName: true } },
+      changedByUser: { select: { id: true, displayName: true } },
+    },
+  },
 } as const satisfies Prisma.IncidentSelect;
 
 function startOfDate(value: string): Date {
@@ -138,7 +148,7 @@ export class AdminIncidentsService {
     });
     if (!incident) throw new NotFoundException('Incident not found.');
 
-    const { assignedToUser, statusHistory, ...details } = incident;
+    const { assignedToUser, statusHistory, assignmentHistory, ...details } = incident;
     return {
       incident: {
         ...details,
@@ -156,6 +166,13 @@ export class AdminIncidentsService {
           changedAt: history.createdAt.toISOString(),
           changedBy: history.changedByUser,
           comment: history.comment,
+        })),
+        assignmentHistory: assignmentHistory.map((history) => ({
+          fromUser: history.fromUser,
+          toUser: history.toUser,
+          changedBy: history.changedByUser,
+          comment: history.comment,
+          changedAt: history.createdAt.toISOString(),
         })),
       },
     };

@@ -59,8 +59,11 @@ model User {
   createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  assignedIncidents     Incident[]              @relation("IncidentAssignee")
-  incidentStatusChanges IncidentStatusHistory[] @relation("IncidentStatusChangedBy")
+  assignedIncidents     Incident[]                  @relation("IncidentAssignee")
+  incidentStatusChanges IncidentStatusHistory[]     @relation("IncidentStatusChangedBy")
+  assignmentsFrom       IncidentAssignmentHistory[] @relation("IncidentAssignmentFromUser")
+  assignmentsTo         IncidentAssignmentHistory[] @relation("IncidentAssignmentToUser")
+  assignmentChanges     IncidentAssignmentHistory[] @relation("IncidentAssignmentChangedBy")
   sessions              StaffSession[]
 
   @@index([role, status])
@@ -121,12 +124,13 @@ model Incident {
   updatedAt             DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
   closedAt              DateTime?          @map("closed_at") @db.Timestamptz(3)
 
-  category            IncidentCategory        @relation(fields: [categoryId], references: [id])
-  assignedToUser      User?                   @relation("IncidentAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
-  duplicateOfIncident Incident?               @relation("IncidentDuplicates", fields: [duplicateOfIncidentId], references: [id], onDelete: SetNull)
-  duplicates          Incident[]              @relation("IncidentDuplicates")
+  category            IncidentCategory            @relation(fields: [categoryId], references: [id])
+  assignedToUser      User?                       @relation("IncidentAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  duplicateOfIncident Incident?                   @relation("IncidentDuplicates", fields: [duplicateOfIncidentId], references: [id], onDelete: SetNull)
+  duplicates          Incident[]                  @relation("IncidentDuplicates")
   contact             IncidentContact?
   statusHistory       IncidentStatusHistory[]
+  assignmentHistory   IncidentAssignmentHistory[]
 
   @@index([categoryId, status])
   @@index([status, severity, submittedAt])
@@ -166,4 +170,25 @@ model IncidentStatusHistory {
   @@index([incidentId, createdAt])
   @@index([changedByUserId])
   @@map("incident_status_history")
+}
+
+model IncidentAssignmentHistory {
+  id              String   @id @default(uuid()) @db.Uuid
+  incidentId      String   @map("incident_id") @db.Uuid
+  fromUserId      String?  @map("from_user_id") @db.Uuid
+  toUserId        String?  @map("to_user_id") @db.Uuid
+  changedByUserId String   @map("changed_by_user_id") @db.Uuid
+  comment         String?  @db.VarChar(1000)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  incident      Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  fromUser      User?    @relation("IncidentAssignmentFromUser", fields: [fromUserId], references: [id], onDelete: SetNull)
+  toUser        User?    @relation("IncidentAssignmentToUser", fields: [toUserId], references: [id], onDelete: SetNull)
+  changedByUser User     @relation("IncidentAssignmentChangedBy", fields: [changedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([incidentId, createdAt])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([changedByUserId])
+  @@map("incident_assignment_history")
 }

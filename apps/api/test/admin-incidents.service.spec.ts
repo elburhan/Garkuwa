@@ -116,6 +116,18 @@ describe('AdminIncidentsService', () => {
           changedByUser: null,
         },
       ],
+      assignmentHistory: [
+        {
+          fromUser: null,
+          toUser: { id: '6bd8a2d5-d369-49f6-bf37-27a35a983a7d', displayName: 'Moderator' },
+          changedByUser: {
+            id: '7915f2ef-67da-45ac-b577-5d5c573afca5',
+            displayName: 'Administrator',
+          },
+          comment: 'Initial allocation',
+          createdAt: submittedAt,
+        },
+      ],
     });
 
     const result = await service.detail(queueRow.id);
@@ -131,6 +143,11 @@ describe('AdminIncidentsService', () => {
     expect(result.incident.description).toContain('\n\n');
     expect(result.incident.statusHistory[0]?.changedBy).toBeNull();
     expect(result.incident.statusHistory[0]).not.toHaveProperty('changedByUser');
+    expect(result.incident.assignmentHistory[0]?.changedBy).toEqual({
+      id: '7915f2ef-67da-45ac-b577-5d5c573afca5',
+      displayName: 'Administrator',
+    });
+    expect(result.incident.assignmentHistory[0]).not.toHaveProperty('changedByUser');
   });
 
   it('returns a safe 404 for a missing incident', async () => {

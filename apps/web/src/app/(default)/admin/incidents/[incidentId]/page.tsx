@@ -6,7 +6,11 @@ import { AdminIncidentDetailView } from '@/components/admin/admin-incident-detai
 import type { Locale } from '@/i18n';
 import { getMessages } from '@/i18n';
 import { getAdminPrincipal } from '@/lib/admin-auth';
-import { incidentViewerRoles, loadAdminIncidentDetail } from '@/lib/admin-incidents-api';
+import {
+  incidentViewerRoles,
+  loadAdminIncidentDetail,
+  loadEligibleAssignees,
+} from '@/lib/admin-incidents-api';
 
 export const metadata: Metadata = { title: 'Cikakken rahoton lamari | Gidauniyar Garkuwa' };
 
@@ -37,5 +41,17 @@ export default async function AdminIncidentDetailPage({
       </main>
     );
   }
-  return <AdminIncidentDetailView locale={locale} incident={result.data.incident} />;
+  const mayAssign = principal.role === 'SUPER_ADMIN' || principal.role === 'ADMIN';
+  const assignees = mayAssign ? await loadEligibleAssignees() : null;
+  if (assignees?.kind === 'unauthenticated') {
+    redirect(`/admin/login?lang=${locale}&reason=expired`);
+  }
+  return (
+    <AdminIncidentDetailView
+      locale={locale}
+      incident={result.data.incident}
+      role={principal.role as 'SUPER_ADMIN' | 'ADMIN' | 'MODERATOR' | 'ANALYST'}
+      eligibleAssignees={assignees?.kind === 'success' ? assignees.data.users : []}
+    />
+  );
 }

@@ -18,6 +18,10 @@ import {
 import { PublicIncidentsController } from './public-incidents.controller.js';
 import { PublicIncidentCategoriesController } from './public-incident-categories.controller.js';
 import { PUBLIC_INCIDENT_CLOCK, PublicIncidentAbuseGuard } from './public-incident-abuse.guard.js';
+import {
+  INCIDENT_WORKFLOW_CLOCK,
+  IncidentWorkflowService,
+} from './workflow/incident-workflow.service.js';
 
 @Module({
   imports: [AuthModule],
@@ -28,6 +32,7 @@ import { PUBLIC_INCIDENT_CLOCK, PublicIncidentAbuseGuard } from './public-incide
   ],
   providers: [
     AdminIncidentsService,
+    IncidentWorkflowService,
     IncidentCategoriesService,
     IncidentSubmissionService,
     ContactDataCryptoService,
@@ -43,6 +48,10 @@ import { PUBLIC_INCIDENT_CLOCK, PublicIncidentAbuseGuard } from './public-incide
     },
     {
       provide: PUBLIC_INCIDENT_CLOCK,
+      useValue: Date.now,
+    },
+    {
+      provide: INCIDENT_WORKFLOW_CLOCK,
       useValue: Date.now,
     },
   ],

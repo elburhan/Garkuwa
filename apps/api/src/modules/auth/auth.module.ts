@@ -24,6 +24,12 @@ import { StaffRolesGuard } from './staff-roles.guard.js';
     StaffLoginRateLimitGuard,
     { provide: STAFF_AUTH_CLOCK, useValue: Date.now },
   ],
-  exports: [StaffSessionGuard, StaffSessionService, StaffRolesGuard],
+  exports: [
+    StaffSessionGuard,
+    StaffSessionService,
+    StaffRolesGuard,
+    StaffAuthOriginGuard,
+    JsonContentTypeGuard,
+  ],
 })
 export class AuthModule {}
