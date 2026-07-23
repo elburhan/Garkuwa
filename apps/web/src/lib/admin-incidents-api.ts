@@ -79,6 +79,17 @@ const eligibleAssigneesSchema = z.object({
   ),
 });
 
+const contactAccessHistorySchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.uuid(),
+      reason: z.string(),
+      accessedAt: z.string(),
+      accessedBy: staffSummarySchema,
+    }),
+  ),
+});
+
 export type AdminIncidentQueue = z.infer<typeof queueResponseSchema>;
 export type AdminIncidentQueueItem = z.infer<typeof queueItemSchema>;
 export type AdminIncidentDetail = z.infer<typeof detailResponseSchema>['incident'];
@@ -86,6 +97,7 @@ export type AdminIncidentStatus = z.infer<typeof statusSchema>;
 export type AdminIncidentSeverity = z.infer<typeof severitySchema>;
 export type AdminSubmissionLanguage = z.infer<typeof languageSchema>;
 export type EligibleAssignee = z.infer<typeof eligibleAssigneesSchema>['users'][number];
+export type ContactAccessHistory = z.infer<typeof contactAccessHistorySchema>;
 
 export type AdminApiResult<T> =
   | { kind: 'success'; data: T }
@@ -178,4 +190,11 @@ export function loadAdminIncidentDetail(incidentId: string) {
 
 export function loadEligibleAssignees() {
   return authenticatedGet('admin/incidents/eligible-assignees', eligibleAssigneesSchema);
+}
+
+export function loadContactAccessHistory(incidentId: string) {
+  return authenticatedGet(
+    `admin/incidents/${encodeURIComponent(incidentId)}/contact-access-history`,
+    contactAccessHistorySchema,
+  );
 }

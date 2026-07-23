@@ -257,11 +257,34 @@ the incident's exact millisecond-precision `updatedAt`; stale changes return `40
 must be refreshed. Browser mutations require strict JSON and an `Origin` exactly matching
 `WEB_ORIGIN`.
 
-All moderation queries use explicit Prisma selections and never select the incident contact
-relation, encrypted contact values, staff security fields, or session data. This phase adds no
-contact reveal, decryption, staff notes, duplicate marking, arbitrary incident editing, deletion,
-bulk actions, media, maps, notifications, analytics, or public tracking. It is not a claim of
-production readiness.
+Ordinary queue/detail queries use explicit Prisma selections and never select the incident
+contact relation, encrypted contact values, staff security fields, or session data.
+
+### Restricted reporter contact access
+
+Only `SUPER_ADMIN` and `ADMIN` may request reporter contact information through
+`POST /api/admin/incidents/:incidentId/contact-access` or read the incident-specific audit list at
+`GET /api/admin/incidents/:incidentId/contact-access-history`. `MODERATOR`, `ANALYST`, and
+`EDITOR` cannot infer contact availability from their ordinary incident views.
+
+Reveal requests require strict JSON, an exact trusted `Origin`, and a 10–1000 character operational
+reason. The API decrypts present contact fields with the existing AES-256-GCM service and writes a
+successful `incident_contact_access_history` row in the same transaction only after decryption
+succeeds. Audit rows contain the actor, incident, contact reference, reason, and timestamp—not
+plaintext or ciphertext snapshots. Viewing contact information does not change incident
+`updatedAt`.
+
+The admin panel requires an explicit acknowledgement before reveal. Decrypted values remain only
+in component memory, use `cache: no-store`, can be hidden immediately, and are automatically
+hidden after two minutes. They are never placed in URLs, browser storage, exports, clipboard
+automation, or server-rendered HTML. Reveal attempts are limited to 10 per staff user per 15
+minutes per API instance. A shared rate-limit store is required before horizontally scaling the
+API.
+
+Contact encryption-key rotation, recovery, production secret management, and operational access
+review remain deployment responsibilities. This phase adds no bulk reveal, export, reporter
+messaging, staff notes, arbitrary incident editing, deletion, media, maps, notifications,
+analytics, or public tracking. It is not a claim of production readiness.
 
 ## Environment variables
 
@@ -339,9 +362,10 @@ placeholder URLs. It does not start PostgreSQL or run migrations.
 
 This repository contains application bootstrapping, bilingual public pages, environment
 validation, database connectivity, local tooling, foundational tests, anonymous incident
-submission, secure staff authentication, and the controlled incident workflow described
-above. It intentionally does **not** implement public tracking, reporter accounts, contact reveal,
-staff notes, arbitrary incident editing or deletion, media uploads, device-location
+submission, secure staff authentication, controlled incident workflow, and restricted audited
+contact access described above. It intentionally does **not** implement public tracking, reporter
+accounts, bulk contact reveal, contact export, staff notes, arbitrary incident editing or
+deletion, media uploads, device-location
 access, maps, production category management, news or editorial workflows, dashboards, analytics,
 object storage, notifications, Redis, queues, outbox events, audit-log business logic, Kubernetes,
 microservices, or Kafka. The platform remains an incremental foundation and is not a claim of

@@ -22,6 +22,11 @@ import {
   INCIDENT_WORKFLOW_CLOCK,
   IncidentWorkflowService,
 } from './workflow/incident-workflow.service.js';
+import {
+  CONTACT_ACCESS_CLOCK,
+  ContactAccessRateLimitGuard,
+} from './contact-access/contact-access-rate-limit.guard.js';
+import { IncidentContactAccessService } from './contact-access/incident-contact-access.service.js';
 
 @Module({
   imports: [AuthModule],
@@ -33,6 +38,8 @@ import {
   providers: [
     AdminIncidentsService,
     IncidentWorkflowService,
+    IncidentContactAccessService,
+    ContactAccessRateLimitGuard,
     IncidentCategoriesService,
     IncidentSubmissionService,
     ContactDataCryptoService,
@@ -52,6 +59,10 @@ import {
     },
     {
       provide: INCIDENT_WORKFLOW_CLOCK,
+      useValue: Date.now,
+    },
+    {
+      provide: CONTACT_ACCESS_CLOCK,
       useValue: Date.now,
     },
   ],

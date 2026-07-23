@@ -8,6 +8,7 @@ import { getMessages } from '@/i18n';
 import { getAdminPrincipal } from '@/lib/admin-auth';
 import {
   incidentViewerRoles,
+  loadContactAccessHistory,
   loadAdminIncidentDetail,
   loadEligibleAssignees,
 } from '@/lib/admin-incidents-api';
@@ -42,8 +43,10 @@ export default async function AdminIncidentDetailPage({
     );
   }
   const mayAssign = principal.role === 'SUPER_ADMIN' || principal.role === 'ADMIN';
-  const assignees = mayAssign ? await loadEligibleAssignees() : null;
-  if (assignees?.kind === 'unauthenticated') {
+  const [assignees, contactHistory] = mayAssign
+    ? await Promise.all([loadEligibleAssignees(), loadContactAccessHistory(incidentId)])
+    : [null, null];
+  if (assignees?.kind === 'unauthenticated' || contactHistory?.kind === 'unauthenticated') {
     redirect(`/admin/login?lang=${locale}&reason=expired`);
   }
   return (
@@ -52,6 +55,9 @@ export default async function AdminIncidentDetailPage({
       incident={result.data.incident}
       role={principal.role as 'SUPER_ADMIN' | 'ADMIN' | 'MODERATOR' | 'ANALYST'}
       eligibleAssignees={assignees?.kind === 'success' ? assignees.data.users : []}
+      contactAccessHistory={
+        contactHistory?.kind === 'success' ? contactHistory.data.items : undefined
+      }
     />
   );
 }
