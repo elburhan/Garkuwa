@@ -6,7 +6,9 @@ import type {
   ContactAccessHistory,
   EligibleAssignee,
   StaffNotes,
+  IncidentAttachments,
 } from '@/lib/admin-incidents-api';
+import { webEnvironment } from '@/lib/env';
 
 import { AdminContactAccessPanel } from './admin-contact-access-panel';
 import { AdminIncidentNotes } from './admin-incident-notes';
@@ -20,6 +22,7 @@ export function AdminIncidentDetailView({
   contactAccessHistory,
   staffNotes = [],
   principalId,
+  attachments = [],
 }: Readonly<{
   locale: Locale;
   incident: AdminIncidentDetail;
@@ -28,6 +31,7 @@ export function AdminIncidentDetailView({
   contactAccessHistory?: ContactAccessHistory['items'];
   staffNotes?: StaffNotes['items'];
   principalId?: string;
+  attachments?: IncidentAttachments['items'];
 }>) {
   const messages = getMessages(locale).admin.incidents;
   const dateFormatter = new Intl.DateTimeFormat(locale === 'ha' ? 'ha-NG' : 'en-NG', {
@@ -177,6 +181,59 @@ export function AdminIncidentDetailView({
           notes={staffNotes}
         />
       ) : null}
+
+      <section className="admin-detail-card" aria-labelledby="incident-attachments-title">
+        <h2 id="incident-attachments-title">{messages.attachments.title}</h2>
+        <p className="admin-read-only-notice">{messages.attachments.privateNotice}</p>
+        {attachments.length === 0 ? (
+          <p>{messages.attachments.noAttachments}</p>
+        ) : (
+          <ul className="admin-attachment-list">
+            {attachments.map((attachment) => (
+              <li key={attachment.id}>
+                <h3>{attachment.originalFilename}</h3>
+                <dl className="admin-detail-grid">
+                  <div>
+                    <dt>{messages.attachments.type}</dt>
+                    <dd>{attachment.verifiedMimeType}</dd>
+                  </div>
+                  <div>
+                    <dt>{messages.attachments.size}</dt>
+                    <dd>{(attachment.sizeBytes / 1024 / 1024).toFixed(2)} MiB</dd>
+                  </div>
+                  <div>
+                    <dt>{messages.attachments.dimensions}</dt>
+                    <dd>
+                      {attachment.width && attachment.height
+                        ? `${attachment.width} × ${attachment.height}`
+                        : messages.attachments.notExtracted}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{messages.attachments.uploadedAt}</dt>
+                    <dd>
+                      <time dateTime={attachment.uploadedAt}>
+                        {dateFormatter.format(new Date(attachment.uploadedAt))}
+                      </time>
+                    </dd>
+                  </div>
+                </dl>
+                <p>{messages.attachments[attachment.status]}</p>
+                {attachment.status === 'AVAILABLE' && role !== 'ANALYST' ? (
+                  <a
+                    className="button button-secondary"
+                    href={`${webEnvironment.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')}/admin/incidents/${incident.id}/attachments/${attachment.id}/content`}
+                  >
+                    {messages.attachments.content}: {attachment.originalFilename}
+                  </a>
+                ) : role === 'ANALYST' ? (
+                  <p>{messages.attachments.metadataOnly}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="admin-detail-card" aria-labelledby="status-history-title">
         <h2 id="status-history-title">{messages.detail.statusHistory}</h2>

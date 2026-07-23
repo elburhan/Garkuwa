@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { resolve } from 'node:path';
 
 import {
   CONTACT_DATA_ENCRYPTION_KEY,
@@ -32,6 +33,12 @@ import {
   STAFF_NOTE_CLOCK,
   StaffNoteRateLimitGuard,
 } from './staff-notes/staff-note-rate-limit.guard.js';
+import { IncidentAttachmentsService } from './attachments/incident-attachments.service.js';
+import {
+  FilesystemIncidentObjectStorage,
+  INCIDENT_STORAGE_ROOT,
+} from './attachments/filesystem-incident-object-storage.js';
+import { INCIDENT_OBJECT_STORAGE } from './attachments/incident-object-storage.js';
 
 @Module({
   imports: [AuthModule],
@@ -47,10 +54,21 @@ import {
     ContactAccessRateLimitGuard,
     IncidentStaffNotesService,
     StaffNoteRateLimitGuard,
+    IncidentAttachmentsService,
+    FilesystemIncidentObjectStorage,
     IncidentCategoriesService,
     IncidentSubmissionService,
     ContactDataCryptoService,
     PublicIncidentAbuseGuard,
+    {
+      provide: INCIDENT_STORAGE_ROOT,
+      useFactory: () =>
+        resolve(process.cwd(), getApiEnvironment().INCIDENT_STORAGE_FILESYSTEM_ROOT),
+    },
+    {
+      provide: INCIDENT_OBJECT_STORAGE,
+      useExisting: FilesystemIncidentObjectStorage,
+    },
     {
       provide: CONTACT_DATA_ENCRYPTION_KEY,
       useFactory: () =>

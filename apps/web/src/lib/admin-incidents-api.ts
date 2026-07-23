@@ -118,6 +118,22 @@ const staffNotesSchema = z.object({
     totalPages: z.number().int().nonnegative(),
   }),
 });
+const incidentAttachmentsSchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.uuid(),
+      originalFilename: z.string(),
+      verifiedMimeType: z.string(),
+      sizeBytes: z.number().int().positive(),
+      width: z.number().int().positive().nullable(),
+      height: z.number().int().positive().nullable(),
+      pageCount: z.number().int().positive().nullable(),
+      status: z.enum(['QUARANTINED', 'AVAILABLE', 'REJECTED']),
+      uploadedAt: z.string(),
+      availableAt: z.string().nullable(),
+    }),
+  ),
+});
 
 export type AdminIncidentQueue = z.infer<typeof queueResponseSchema>;
 export type AdminIncidentQueueItem = z.infer<typeof queueItemSchema>;
@@ -129,6 +145,7 @@ export type EligibleAssignee = z.infer<typeof eligibleAssigneesSchema>['users'][
 export type ContactAccessHistory = z.infer<typeof contactAccessHistorySchema>;
 export type StaffNotes = z.infer<typeof staffNotesSchema>;
 export type StaffNote = StaffNotes['items'][number];
+export type IncidentAttachments = z.infer<typeof incidentAttachmentsSchema>;
 
 export type AdminApiResult<T> =
   | { kind: 'success'; data: T }
@@ -234,5 +251,12 @@ export function loadStaffNotes(incidentId: string) {
   return authenticatedGet(
     `admin/incidents/${encodeURIComponent(incidentId)}/notes?page=1&pageSize=100`,
     staffNotesSchema,
+  );
+}
+
+export function loadIncidentAttachments(incidentId: string) {
+  return authenticatedGet(
+    `admin/incidents/${encodeURIComponent(incidentId)}/attachments`,
+    incidentAttachmentsSchema,
   );
 }

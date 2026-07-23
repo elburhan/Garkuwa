@@ -21,6 +21,7 @@ interface PublicIncidentRequest {
   headers: Record<string, string | string[] | undefined>;
   ip?: string;
   socket: { remoteAddress?: string };
+  originalUrl?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -44,7 +45,7 @@ export class PublicIncidentAbuseGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<PublicIncidentRequest>();
-    this.assertJsonContentType(request);
+    this.assertSupportedContentType(request);
 
     const timestamp = this.now();
     const clientIp = request.ip ?? request.socket.remoteAddress ?? 'unknown';
@@ -60,13 +61,19 @@ export class PublicIncidentAbuseGuard implements CanActivate {
     this.duplicateExpirations.clear();
   }
 
-  private assertJsonContentType(request: PublicIncidentRequest): void {
+  assertMultipartDuplicate(clientIp: string, body: unknown): void {
+    this.rejectRecentDuplicate(clientIp, body, this.now());
+  }
+
+  private assertSupportedContentType(request: PublicIncidentRequest): void {
     const header = request.headers['content-type'];
     const contentType = Array.isArray(header) ? header[0] : header;
     const mediaType = contentType?.split(';', 1)[0]?.trim().toLowerCase();
 
-    if (mediaType !== 'application/json') {
-      throw new UnsupportedMediaTypeException('Content-Type must be application/json.');
+    const multipartRoute = request.originalUrl?.includes('/with-attachments') ?? false;
+    const expected = multipartRoute ? 'multipart/form-data' : 'application/json';
+    if (mediaType !== expected) {
+      throw new UnsupportedMediaTypeException(`Content-Type must be ${expected}.`);
     }
   }
 

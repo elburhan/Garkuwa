@@ -319,6 +319,41 @@ has a separate restricted, audited workflow. This phase includes no encryption c
 text and no attachments, rich text, Markdown rendering, mentions, notifications, messaging,
 search, export, analytics, or public tracking. It is not a claim of production readiness.
 
+### Private incident evidence attachments
+
+`POST /api/public/incidents` remains the text-only JSON path. When evidence is selected, the form
+uses `POST /api/public/incidents/with-attachments` with one `report` JSON field and repeated
+`attachments` fields. Both routes remain anonymous, share the per-IP attempt budget and duplicate
+fingerprint, and return no IDs, hashes, statuses, object keys, public URLs, or tracking data.
+
+V1 accepts only signature-verified JPEG, PNG, WebP, and PDF: at most five files, 10 MiB each and
+25 MiB combined. The API sanitizes display filenames, generates non-identifying keys, calculates
+SHA-256 over exact bytes, and extracts supported image dimensions. PDF page count remains unset.
+Original bytes are preserved; EXIF/GPS display, OCR, classification, face recognition,
+thumbnails, transformations, audio, video, SVG, Office files, archives, and analysis are excluded.
+
+The implemented private storage adapter writes development files beneath
+`INCIDENT_STORAGE_FILESYSTEM_ROOT`, outside public web assets. Configure
+`INCIDENT_STORAGE_DRIVER=filesystem`. This adapter is development-only; an S3-compatible
+production adapter and credentials are not implemented. Storage precedes the database
+transaction. Database failure triggers best-effort object cleanup, while storage failure creates
+no incident. Process termination between storage and compensation can leave an orphan requiring
+operational cleanup.
+
+Attachments start `QUARANTINED`. Malware scanning is not integrated, and there is no fake clean
+result or scan-bypass endpoint. Authenticated incident viewers may list safe metadata at
+`GET /api/admin/incidents/:incidentId/attachments`. Only `SUPER_ADMIN`, `ADMIN`, and `MODERATOR`
+may request `AVAILABLE` content at
+`GET /api/admin/incidents/:incidentId/attachments/:attachmentId/content`; `ANALYST` is
+metadata-only. Each authorized content initiation creates an audit row. Delivery is private,
+no-store, `nosniff`, CSP-restricted, and uses attachment disposition. It does not prove download
+completion.
+
+Staff notes do not accept files. There is no public gallery, reporter tracking, staff upload,
+bulk download, attachment deletion UI, messaging, or notification. Evidence retention and
+deletion rules require institutional/legal approval; no retention period is invented. This is not
+a production-readiness claim.
+
 ## Environment variables
 
 Create `.env` only at the repository root. Next.js and Prisma resolve that file from their
@@ -341,6 +376,10 @@ encrypted contact values unrecoverable.
 
 `STAFF_SESSION_COOKIE_SECURE` is also required and accepts only `true` or `false`. Use `false` for
 local HTTP development and `true` for every HTTPS production deployment.
+
+`INCIDENT_STORAGE_DRIVER` currently accepts only `filesystem`.
+`INCIDENT_STORAGE_FILESYSTEM_ROOT` selects its private development root (for example
+`.var/incident-uploads`). Do not place it beneath `apps/web/public`; `.var` is ignored by Git.
 
 `NEXT_PUBLIC_API_BASE_URL` must be the public API prefix, such as
 `http://localhost:4000/api` for local development. The web client validates this URL and safely

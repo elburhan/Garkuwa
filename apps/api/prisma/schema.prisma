@@ -44,6 +44,16 @@ enum PreferredContactMethod {
   EMAIL
 }
 
+enum AttachmentStatus {
+  QUARANTINED
+  AVAILABLE
+  REJECTED
+}
+
+enum AttachmentAccessType {
+  CONTENT_ACCESS
+}
+
 model User {
   id                  String     @id @default(uuid()) @db.Uuid
   /// Must be stored in normalized lowercase form by the future identity service.
@@ -59,15 +69,16 @@ model User {
   createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  assignedIncidents     Incident[]                     @relation("IncidentAssignee")
-  incidentStatusChanges IncidentStatusHistory[]        @relation("IncidentStatusChangedBy")
-  assignmentsFrom       IncidentAssignmentHistory[]    @relation("IncidentAssignmentFromUser")
-  assignmentsTo         IncidentAssignmentHistory[]    @relation("IncidentAssignmentToUser")
-  assignmentChanges     IncidentAssignmentHistory[]    @relation("IncidentAssignmentChangedBy")
+  assignedIncidents     Incident[]                        @relation("IncidentAssignee")
+  incidentStatusChanges IncidentStatusHistory[]           @relation("IncidentStatusChangedBy")
+  assignmentsFrom       IncidentAssignmentHistory[]       @relation("IncidentAssignmentFromUser")
+  assignmentsTo         IncidentAssignmentHistory[]       @relation("IncidentAssignmentToUser")
+  assignmentChanges     IncidentAssignmentHistory[]       @relation("IncidentAssignmentChangedBy")
   contactAccesses       IncidentContactAccessHistory[]
-  authoredIncidentNotes IncidentStaffNote[]            @relation("IncidentStaffNoteAuthor")
-  deletedIncidentNotes  IncidentStaffNote[]            @relation("IncidentStaffNoteDeletedBy")
-  noteRevisionChanges   IncidentStaffNoteRevision[]    @relation("IncidentStaffNoteRevisionChangedBy")
+  authoredIncidentNotes IncidentStaffNote[]               @relation("IncidentStaffNoteAuthor")
+  deletedIncidentNotes  IncidentStaffNote[]               @relation("IncidentStaffNoteDeletedBy")
+  noteRevisionChanges   IncidentStaffNoteRevision[]       @relation("IncidentStaffNoteRevisionChangedBy")
+  attachmentAccesses    IncidentAttachmentAccessHistory[]
   sessions              StaffSession[]
 
   @@index([role, status])
@@ -128,15 +139,17 @@ model Incident {
   updatedAt             DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
   closedAt              DateTime?          @map("closed_at") @db.Timestamptz(3)
 
-  category             IncidentCategory               @relation(fields: [categoryId], references: [id])
-  assignedToUser       User?                          @relation("IncidentAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
-  duplicateOfIncident  Incident?                      @relation("IncidentDuplicates", fields: [duplicateOfIncidentId], references: [id], onDelete: SetNull)
-  duplicates           Incident[]                     @relation("IncidentDuplicates")
-  contact              IncidentContact?
-  statusHistory        IncidentStatusHistory[]
-  assignmentHistory    IncidentAssignmentHistory[]
-  contactAccessHistory IncidentContactAccessHistory[]
-  staffNotes           IncidentStaffNote[]
+  category                IncidentCategory                  @relation(fields: [categoryId], references: [id])
+  assignedToUser          User?                             @relation("IncidentAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  duplicateOfIncident     Incident?                         @relation("IncidentDuplicates", fields: [duplicateOfIncidentId], references: [id], onDelete: SetNull)
+  duplicates              Incident[]                        @relation("IncidentDuplicates")
+  contact                 IncidentContact?
+  statusHistory           IncidentStatusHistory[]
+  assignmentHistory       IncidentAssignmentHistory[]
+  contactAccessHistory    IncidentContactAccessHistory[]
+  staffNotes              IncidentStaffNote[]
+  attachments             IncidentAttachment[]
+  attachmentAccessHistory IncidentAttachmentAccessHistory[]
 
   @@index([categoryId, status])
   @@index([status, severity, submittedAt])
@@ -257,4 +270,48 @@ model IncidentStaffNoteRevision {
   @@index([noteId, createdAt])
   @@index([changedByUserId, createdAt])
   @@map("incident_staff_note_revisions")
+}
+
+model IncidentAttachment {
+  id               String           @id @default(uuid()) @db.Uuid
+  incidentId       String           @map("incident_id") @db.Uuid
+  objectKey        String           @unique @map("object_key") @db.VarChar(255)
+  originalFilename String           @map("original_filename") @db.VarChar(255)
+  verifiedMimeType String           @map("verified_mime_type") @db.VarChar(80)
+  sizeBytes        Int              @map("size_bytes")
+  sha256           String           @db.Char(64)
+  width            Int?
+  height           Int?
+  pageCount        Int?             @map("page_count")
+  status           AttachmentStatus @default(QUARANTINED)
+  uploadedAt       DateTime         @default(now()) @map("uploaded_at") @db.Timestamptz(3)
+  availableAt      DateTime?        @map("available_at") @db.Timestamptz(3)
+  rejectedAt       DateTime?        @map("rejected_at") @db.Timestamptz(3)
+  rejectionReason  String?          @map("rejection_reason") @db.VarChar(1000)
+
+  incident      Incident                          @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  accessHistory IncidentAttachmentAccessHistory[]
+
+  @@index([incidentId, uploadedAt])
+  @@index([status, uploadedAt])
+  @@index([sha256])
+  @@map("incident_attachments")
+}
+
+model IncidentAttachmentAccessHistory {
+  id               String               @id @default(uuid()) @db.Uuid
+  attachmentId     String               @map("attachment_id") @db.Uuid
+  incidentId       String               @map("incident_id") @db.Uuid
+  accessedByUserId String               @map("accessed_by_user_id") @db.Uuid
+  accessType       AttachmentAccessType @default(CONTENT_ACCESS) @map("access_type")
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  attachment IncidentAttachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  incident   Incident           @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  accessedBy User               @relation(fields: [accessedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([attachmentId, createdAt])
+  @@index([accessedByUserId, createdAt])
+  @@index([incidentId, createdAt])
+  @@map("incident_attachment_access_history")
 }

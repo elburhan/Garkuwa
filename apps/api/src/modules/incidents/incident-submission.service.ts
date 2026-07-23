@@ -14,6 +14,11 @@ import {
 } from '../../generated/prisma/enums.js';
 import type { CreateIncidentDto } from './dto/create-incident.dto.js';
 import type { IncidentCaseIdGenerator } from './incident-case-id.js';
+import {
+  INCIDENT_OBJECT_STORAGE,
+  type IncidentObjectStorage,
+} from './attachments/incident-object-storage.js';
+import type { VerifiedAttachment } from './attachments/attachment-file-validation.js';
 
 export const INCIDENT_CASE_ID_GENERATOR = Symbol('INCIDENT_CASE_ID_GENERATOR');
 
@@ -51,6 +56,8 @@ export class IncidentSubmissionService {
     private readonly generateCaseId: IncidentCaseIdGenerator,
     @Inject(ContactDataCryptoService)
     private readonly contactDataCrypto: ContactDataCryptoService,
+    @Inject(INCIDENT_OBJECT_STORAGE)
+    private readonly storage?: IncidentObjectStorage,
   ) {}
 
   async submit(input: CreateIncidentDto): Promise<IncidentSubmissionResponse> {
@@ -85,7 +92,53 @@ export class IncidentSubmissionService {
     throw new InternalServerErrorException('The submission could not be completed safely.');
   }
 
-  private async createSubmission(input: CreateIncidentDto, internalCaseId: string): Promise<void> {
+  async submitWithAttachments(
+    input: CreateIncidentDto,
+    attachments: VerifiedAttachment[],
+  ): Promise<IncidentSubmissionResponse> {
+    const storedKeys: string[] = [];
+    const storage = this.storage;
+    if (!storage) {
+      throw new InternalServerErrorException('The submission could not be completed safely.');
+    }
+    try {
+      for (const attachment of attachments) {
+        await storage.putObject({
+          objectKey: attachment.objectKey,
+          body: attachment.body,
+          contentType: attachment.verifiedMimeType,
+          contentLength: attachment.sizeBytes,
+        });
+        storedKeys.push(attachment.objectKey);
+      }
+      for (let attempt = 1; attempt <= MAX_CASE_ID_ATTEMPTS; attempt += 1) {
+        try {
+          await this.createSubmission(input, this.generateCaseId(), attachments);
+          return {
+            success: true,
+            message:
+              input.submissionLanguage === SubmissionLanguage.ha
+                ? 'An karɓi rahotonka. Za a duba shi ta hanyar tsarin cikin gida.'
+                : 'Your report has been received for internal review.',
+          };
+        } catch (error) {
+          if (isCaseIdCollision(error) && attempt < MAX_CASE_ID_ATTEMPTS) continue;
+          throw error;
+        }
+      }
+      throw new Error('Case ID generation failed.');
+    } catch (error) {
+      await Promise.allSettled(storedKeys.map((objectKey) => storage.deleteObject(objectKey)));
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException('The submission could not be completed safely.');
+    }
+  }
+
+  private async createSubmission(
+    input: CreateIncidentDto,
+    internalCaseId: string,
+    attachments: VerifiedAttachment[] = [],
+  ): Promise<void> {
     await this.prisma.$transaction(async (transaction) => {
       const category = await transaction.incidentCategory.findFirst({
         where: { id: input.categoryId, isActive: true },
@@ -140,6 +193,21 @@ export class IncidentSubmissionService {
           changedByUserId: null,
         },
       });
+      if (attachments.length > 0) {
+        await transaction.incidentAttachment.createMany({
+          data: attachments.map((attachment) => ({
+            incidentId: incident.id,
+            objectKey: attachment.objectKey,
+            originalFilename: attachment.originalFilename,
+            verifiedMimeType: attachment.verifiedMimeType,
+            sizeBytes: attachment.sizeBytes,
+            sha256: attachment.sha256,
+            width: attachment.width,
+            height: attachment.height,
+            pageCount: attachment.pageCount,
+          })),
+        });
+      }
     });
   }
 
