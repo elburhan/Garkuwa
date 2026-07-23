@@ -41,6 +41,21 @@ import {
 } from '../contact-access/dto/contact-access.dto.js';
 import { ContactAccessRateLimitGuard } from '../contact-access/contact-access-rate-limit.guard.js';
 import { IncidentContactAccessService } from '../contact-access/incident-contact-access.service.js';
+import {
+  createStaffNoteSchema,
+  editStaffNoteSchema,
+  listStaffNotesSchema,
+  redactStaffNoteSchema,
+  staffNoteParamsSchema,
+  StaffNoteZodPipe,
+  type CreateStaffNoteDto,
+  type EditStaffNoteDto,
+  type ListStaffNotesQuery,
+  type RedactStaffNoteDto,
+  type StaffNoteParams,
+} from '../staff-notes/dto/staff-note.dto.js';
+import { IncidentStaffNotesService } from '../staff-notes/incident-staff-notes.service.js';
+import { StaffNoteRateLimitGuard } from '../staff-notes/staff-note-rate-limit.guard.js';
 
 const incidentViewerRoles = [
   StaffRole.SUPER_ADMIN,
@@ -58,6 +73,8 @@ export class AdminIncidentsController {
     @Inject(IncidentWorkflowService) private readonly workflow: IncidentWorkflowService,
     @Inject(IncidentContactAccessService)
     private readonly contactAccess: IncidentContactAccessService,
+    @Inject(IncidentStaffNotesService)
+    private readonly staffNotes: IncidentStaffNotesService,
   ) {}
 
   @Get()
@@ -124,5 +141,67 @@ export class AdminIncidentsController {
     @Param(new AdminIncidentsZodPipe(incidentIdParamSchema)) parameters: IncidentIdParam,
   ) {
     return this.contactAccess.history(parameters.incidentId);
+  }
+
+  @Get(':incidentId/notes')
+  @Header('Cache-Control', 'no-store')
+  listNotes(
+    @Param(new AdminIncidentsZodPipe(incidentIdParamSchema)) parameters: IncidentIdParam,
+    @Query(new StaffNoteZodPipe(listStaffNotesSchema)) query: ListStaffNotesQuery,
+  ) {
+    return this.staffNotes.list(parameters.incidentId, query);
+  }
+
+  @Post(':incidentId/notes')
+  @Header('Cache-Control', 'no-store')
+  @StaffRoles(StaffRole.SUPER_ADMIN, StaffRole.ADMIN, StaffRole.MODERATOR)
+  @UseGuards(StaffAuthOriginGuard, JsonContentTypeGuard, StaffNoteRateLimitGuard)
+  createNote(
+    @Param(new AdminIncidentsZodPipe(incidentIdParamSchema)) parameters: IncidentIdParam,
+    @Body(new StaffNoteZodPipe(createStaffNoteSchema)) input: CreateStaffNoteDto,
+    @Req() request: StaffAuthRequest,
+  ) {
+    return this.staffNotes.create(parameters.incidentId, input, request.staffPrincipal!);
+  }
+
+  @Patch(':incidentId/notes/:noteId')
+  @Header('Cache-Control', 'no-store')
+  @StaffRoles(StaffRole.SUPER_ADMIN, StaffRole.ADMIN, StaffRole.MODERATOR)
+  @UseGuards(StaffAuthOriginGuard, JsonContentTypeGuard, StaffNoteRateLimitGuard)
+  editNote(
+    @Param(new StaffNoteZodPipe(staffNoteParamsSchema)) parameters: StaffNoteParams,
+    @Body(new StaffNoteZodPipe(editStaffNoteSchema)) input: EditStaffNoteDto,
+    @Req() request: StaffAuthRequest,
+  ) {
+    return this.staffNotes.edit(
+      parameters.incidentId,
+      parameters.noteId,
+      input,
+      request.staffPrincipal!,
+    );
+  }
+
+  @Post(':incidentId/notes/:noteId/redact')
+  @Header('Cache-Control', 'no-store')
+  @StaffRoles(StaffRole.SUPER_ADMIN, StaffRole.ADMIN)
+  @UseGuards(StaffAuthOriginGuard, JsonContentTypeGuard, StaffNoteRateLimitGuard)
+  redactNote(
+    @Param(new StaffNoteZodPipe(staffNoteParamsSchema)) parameters: StaffNoteParams,
+    @Body(new StaffNoteZodPipe(redactStaffNoteSchema)) input: RedactStaffNoteDto,
+    @Req() request: StaffAuthRequest,
+  ) {
+    return this.staffNotes.redact(
+      parameters.incidentId,
+      parameters.noteId,
+      input,
+      request.staffPrincipal!,
+    );
+  }
+
+  @Get(':incidentId/notes/:noteId/revisions')
+  @Header('Cache-Control', 'no-store')
+  @StaffRoles(StaffRole.SUPER_ADMIN, StaffRole.ADMIN)
+  noteRevisions(@Param(new StaffNoteZodPipe(staffNoteParamsSchema)) parameters: StaffNoteParams) {
+    return this.staffNotes.revisions(parameters.incidentId, parameters.noteId);
   }
 }

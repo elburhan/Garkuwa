@@ -90,6 +90,35 @@ const contactAccessHistorySchema = z.object({
   ),
 });
 
+const activeStaffNoteSchema = z.object({
+  id: z.uuid(),
+  body: z.string(),
+  version: z.number().int().positive(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  editedAt: z.string().nullable(),
+  author: staffSummarySchema,
+  isDeleted: z.literal(false),
+});
+const deletedStaffNoteSchema = z.object({
+  id: z.uuid(),
+  isDeleted: z.literal(true),
+  createdAt: z.string(),
+  deletedAt: z.string(),
+  author: staffSummarySchema,
+});
+const staffNotesSchema = z.object({
+  items: z.array(
+    z.discriminatedUnion('isDeleted', [activeStaffNoteSchema, deletedStaffNoteSchema]),
+  ),
+  pagination: z.object({
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    totalItems: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  }),
+});
+
 export type AdminIncidentQueue = z.infer<typeof queueResponseSchema>;
 export type AdminIncidentQueueItem = z.infer<typeof queueItemSchema>;
 export type AdminIncidentDetail = z.infer<typeof detailResponseSchema>['incident'];
@@ -98,6 +127,8 @@ export type AdminIncidentSeverity = z.infer<typeof severitySchema>;
 export type AdminSubmissionLanguage = z.infer<typeof languageSchema>;
 export type EligibleAssignee = z.infer<typeof eligibleAssigneesSchema>['users'][number];
 export type ContactAccessHistory = z.infer<typeof contactAccessHistorySchema>;
+export type StaffNotes = z.infer<typeof staffNotesSchema>;
+export type StaffNote = StaffNotes['items'][number];
 
 export type AdminApiResult<T> =
   | { kind: 'success'; data: T }
@@ -196,5 +227,12 @@ export function loadContactAccessHistory(incidentId: string) {
   return authenticatedGet(
     `admin/incidents/${encodeURIComponent(incidentId)}/contact-access-history`,
     contactAccessHistorySchema,
+  );
+}
+
+export function loadStaffNotes(incidentId: string) {
+  return authenticatedGet(
+    `admin/incidents/${encodeURIComponent(incidentId)}/notes?page=1&pageSize=100`,
+    staffNotesSchema,
   );
 }

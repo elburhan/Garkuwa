@@ -27,6 +27,11 @@ import {
   ContactAccessRateLimitGuard,
 } from './contact-access/contact-access-rate-limit.guard.js';
 import { IncidentContactAccessService } from './contact-access/incident-contact-access.service.js';
+import { IncidentStaffNotesService } from './staff-notes/incident-staff-notes.service.js';
+import {
+  STAFF_NOTE_CLOCK,
+  StaffNoteRateLimitGuard,
+} from './staff-notes/staff-note-rate-limit.guard.js';
 
 @Module({
   imports: [AuthModule],
@@ -40,6 +45,8 @@ import { IncidentContactAccessService } from './contact-access/incident-contact-
     IncidentWorkflowService,
     IncidentContactAccessService,
     ContactAccessRateLimitGuard,
+    IncidentStaffNotesService,
+    StaffNoteRateLimitGuard,
     IncidentCategoriesService,
     IncidentSubmissionService,
     ContactDataCryptoService,
@@ -63,6 +70,10 @@ import { IncidentContactAccessService } from './contact-access/incident-contact-
     },
     {
       provide: CONTACT_ACCESS_CLOCK,
+      useValue: Date.now,
+    },
+    {
+      provide: STAFF_NOTE_CLOCK,
       useValue: Date.now,
     },
   ],

@@ -5,9 +5,11 @@ import type {
   AdminIncidentDetail,
   ContactAccessHistory,
   EligibleAssignee,
+  StaffNotes,
 } from '@/lib/admin-incidents-api';
 
 import { AdminContactAccessPanel } from './admin-contact-access-panel';
+import { AdminIncidentNotes } from './admin-incident-notes';
 import { AdminIncidentWorkflowControls } from './admin-incident-workflow-controls';
 
 export function AdminIncidentDetailView({
@@ -16,12 +18,16 @@ export function AdminIncidentDetailView({
   role,
   eligibleAssignees = [],
   contactAccessHistory,
+  staffNotes = [],
+  principalId,
 }: Readonly<{
   locale: Locale;
   incident: AdminIncidentDetail;
   role: 'SUPER_ADMIN' | 'ADMIN' | 'MODERATOR' | 'ANALYST';
   eligibleAssignees?: readonly EligibleAssignee[];
   contactAccessHistory?: ContactAccessHistory['items'];
+  staffNotes?: StaffNotes['items'];
+  principalId?: string;
 }>) {
   const messages = getMessages(locale).admin.incidents;
   const dateFormatter = new Intl.DateTimeFormat(locale === 'ha' ? 'ha-NG' : 'en-NG', {
@@ -159,6 +165,16 @@ export function AdminIncidentDetailView({
           locale={locale}
           incidentId={incident.id}
           history={contactAccessHistory ?? []}
+        />
+      ) : null}
+
+      {principalId ? (
+        <AdminIncidentNotes
+          locale={locale}
+          incidentId={incident.id}
+          principalId={principalId}
+          role={role}
+          notes={staffNotes}
         />
       ) : null}
 
