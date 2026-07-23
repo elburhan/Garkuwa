@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AdminAccessDenied } from '../src/components/admin/admin-access-denied';
@@ -14,6 +15,9 @@ import type {
   AdminIncidentQueue as QueueResponse,
 } from '../src/lib/admin-incidents-api';
 import { buildAdminIncidentsPath } from '../src/lib/admin-incidents-api';
+
+const refresh = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh, replace: vi.fn() }) }));
 
 vi.mock('../src/lib/env', () => ({
   webEnvironment: {
@@ -64,9 +68,14 @@ const detail: AdminIncidentDetail = {
       comment: null,
     },
   ],
+  assignmentHistory: [],
 };
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  refresh.mockClear();
+});
 
 describe('read-only admin incident web interface', () => {
   it('renders independently localized Hausa and English queue labels without report text', () => {
@@ -113,12 +122,69 @@ describe('read-only admin incident web interface', () => {
   });
 
   it('renders paragraphs as text and exposes no editing or contact-reveal actions', () => {
-    const { container } = render(<AdminIncidentDetailView locale="en" incident={detail} />);
+    const { container } = render(
+      <AdminIncidentDetailView locale="en" incident={detail} role="ANALYST" />,
+    );
     expect(screen.getByText(/First paragraph/).textContent).toContain('<script>unsafe()</script>');
     expect(container.querySelector('script')).toBeNull();
     expect(screen.getByText('Status history')).toBeTruthy();
     expect(screen.queryByRole('button')).toBeNull();
     expect(document.body.textContent).not.toMatch(/reveal contact|change status|assign incident/i);
+  });
+
+  it('shows only role-authorized workflow controls and allowed transitions', () => {
+    const { rerender } = render(
+      <AdminIncidentDetailView locale="en" incident={detail} role="MODERATOR" />,
+    );
+    expect(screen.getByRole('group', { name: 'Change status' })).toBeTruthy();
+    expect(screen.queryByRole('group', { name: 'Assign incident' })).toBeNull();
+    const status = screen.getByLabelText('Next status');
+    expect(status.textContent).toContain('Under review');
+    expect(status.textContent).toContain('Rejected');
+    expect(status.textContent).not.toContain('Closed');
+
+    rerender(
+      <AdminIncidentDetailView
+        locale="en"
+        incident={detail}
+        role="ADMIN"
+        eligibleAssignees={[
+          {
+            id: '6bd8a2d5-d369-49f6-bf37-27a35a983a7d',
+            displayName: 'Moderator',
+            email: 'moderator@example.test',
+            role: 'MODERATOR',
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByRole('group', { name: 'Assign incident' })).toBeTruthy();
+  });
+
+  it('requires reason and confirmation for rejection and handles conflicts safely', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(null, { status: 409, headers: { 'Content-Type': 'application/json' } }),
+    );
+    render(<AdminIncidentDetailView locale="en" incident={detail} role="MODERATOR" />);
+    await user.selectOptions(screen.getByLabelText('Next status'), 'REJECTED');
+    await user.click(screen.getByRole('button', { name: 'Change status' }));
+    expect(screen.getByText('A reason is required for this transition.')).toBeTruthy();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+
+    await user.type(screen.getByLabelText('Transition reason'), 'Reviewed evidence');
+    await user.click(screen.getByLabelText('I confirm that this incident should be rejected.'));
+    await user.click(screen.getByRole('button', { name: 'Change status' }));
+    expect(await screen.findByText(/changed elsewhere/i)).toBeTruthy();
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining(`/admin/incidents/${detail.id}/status`),
+      expect.objectContaining({
+        method: 'PATCH',
+        credentials: 'include',
+        headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+      }),
+    );
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it('renders a localized access-denied view for unauthorized staff', () => {
@@ -151,5 +217,17 @@ describe('read-only admin incident web interface', () => {
     expect(source).not.toContain('Authorization:');
     expect(source).not.toContain('localStorage');
     expect(source).not.toContain('sessionStorage');
+  });
+
+  it('does not store workflow credentials or expose contact actions', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/lib/admin-incident-workflow-api.ts'),
+      'utf8',
+    );
+    expect(source).toContain("credentials: 'include'");
+    expect(source).not.toContain('localStorage');
+    expect(source).not.toContain('sessionStorage');
+    expect(source).not.toContain('Cookie');
+    expect(source).not.toMatch(/reveal|decrypt/i);
   });
 });

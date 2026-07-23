@@ -8,7 +8,8 @@ const roleWithIncidentAccess = ['SUPER_ADMIN', 'ADMIN', 'MODERATOR', 'ANALYST'] 
 export const incidentViewerRoles = new Set<string>(roleWithIncidentAccess);
 
 const categorySchema = z.object({ id: z.uuid(), nameHa: z.string(), nameEn: z.string() });
-const assigneeSchema = z.object({ id: z.uuid(), displayName: z.string() }).nullable();
+const staffSummarySchema = z.object({ id: z.uuid(), displayName: z.string() });
+const assigneeSchema = staffSummarySchema.nullable();
 const statusSchema = z.enum(['NEW', 'UNDER_REVIEW', 'ACTIONED', 'CLOSED', 'REJECTED']);
 const severitySchema = z.enum(['LOW', 'MEDIUM', 'HIGH']);
 const languageSchema = z.enum(['ha', 'en']);
@@ -46,6 +47,14 @@ const historySchema = z.object({
   comment: z.string().nullable(),
 });
 
+const assignmentHistorySchema = z.object({
+  fromUser: staffSummarySchema.nullable(),
+  toUser: staffSummarySchema.nullable(),
+  changedBy: staffSummarySchema,
+  comment: z.string().nullable(),
+  changedAt: z.string(),
+});
+
 const detailResponseSchema = z.object({
   incident: queueItemSchema.omit({ incidentDate: true }).extend({
     description: z.string(),
@@ -57,7 +66,17 @@ const detailResponseSchema = z.object({
     updatedAt: z.string(),
     closedAt: z.string().nullable(),
     statusHistory: z.array(historySchema),
+    assignmentHistory: z.array(assignmentHistorySchema),
   }),
+});
+
+const eligibleAssigneesSchema = z.object({
+  users: z.array(
+    staffSummarySchema.extend({
+      email: z.email(),
+      role: z.enum(['SUPER_ADMIN', 'ADMIN', 'MODERATOR']),
+    }),
+  ),
 });
 
 export type AdminIncidentQueue = z.infer<typeof queueResponseSchema>;
@@ -66,6 +85,7 @@ export type AdminIncidentDetail = z.infer<typeof detailResponseSchema>['incident
 export type AdminIncidentStatus = z.infer<typeof statusSchema>;
 export type AdminIncidentSeverity = z.infer<typeof severitySchema>;
 export type AdminSubmissionLanguage = z.infer<typeof languageSchema>;
+export type EligibleAssignee = z.infer<typeof eligibleAssigneesSchema>['users'][number];
 
 export type AdminApiResult<T> =
   | { kind: 'success'; data: T }
@@ -154,4 +174,8 @@ export function loadAdminIncidentDetail(incidentId: string) {
     `admin/incidents/${encodeURIComponent(incidentId)}`,
     detailResponseSchema,
   );
+}
+
+export function loadEligibleAssignees() {
+  return authenticatedGet('admin/incidents/eligible-assignees', eligibleAssigneesSchema);
 }

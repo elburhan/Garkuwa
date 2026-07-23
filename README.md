@@ -13,7 +13,8 @@ Hausa is the canonical public language at `/`; English is secondary at `/en`. Th
 - `infrastructure`: local PostGIS-capable PostgreSQL 17 server through Docker Compose.
 
 The database models staff identity plus the first anonymous incident-submission domain. A
-Hausa-first public reporting form now uses that API; no staff moderation workflow exists yet.
+Hausa-first public reporting form uses that API, and authenticated staff have a narrowly
+controlled incident workflow.
 Business functionality will continue to be added incrementally.
 
 ## Prerequisites
@@ -217,7 +218,7 @@ temporary lock, and revokes existing sessions. There is no registration, passwor
 verification, MFA, OAuth, social login, remember-me session, or refresh token yet. MFA and password
 recovery require separate reviewed workflows before production readiness.
 
-## Read-only incident moderation
+## Incident moderation and controlled workflow
 
 Authenticated staff can use `/admin/incidents` and `/admin/incidents/:incidentId` to review the
 incident queue and individual incident records. The corresponding API endpoints are
@@ -232,12 +233,35 @@ filters are status, severity, category, submission language, state, LGA, submitt
 a bounded search over case ID and location fields. Sorting is limited to newest, oldest, severity,
 or status, with a deterministic incident-ID secondary sort. There is no unrestricted export.
 
-The detail view includes the report text and ordered status history, rendered as plain text.
-Both views use explicit Prisma selections and never select the incident contact relation,
-encrypted contact values, staff security fields, or session data. This phase is strictly
-read-only: it adds no contact reveal, decryption, status change, assignment change, notes,
-duplicate marking, editing, deletion, bulk action, media, analytics, or public tracking. It is not
-a claim of production readiness.
+The detail view includes report text, ordered status history, and ordered assignment history,
+rendered as plain text. `SUPER_ADMIN`, `ADMIN`, and `MODERATOR` may perform approved status
+transitions through `PATCH /api/admin/incidents/:incidentId/status`. Only `SUPER_ADMIN` and
+`ADMIN` may assign, reassign, or unassign through
+`PATCH /api/admin/incidents/:incidentId/assignment`; those roles may also query the bounded
+`GET /api/admin/incidents/eligible-assignees` list. `ANALYST` access remains read-only.
+
+The approved transitions are:
+
+```text
+NEW -> UNDER_REVIEW | REJECTED
+UNDER_REVIEW -> ACTIONED | CLOSED | REJECTED
+ACTIONED -> UNDER_REVIEW | CLOSED
+CLOSED -> UNDER_REVIEW
+REJECTED -> UNDER_REVIEW
+```
+
+Rejecting or reopening a closed/rejected incident requires a reason. Assignment to the current
+assignee is rejected as no change. Every successful status change and assignment change writes
+its matching audit-history row in the same database transaction. Both mutation endpoints require
+the incident's exact millisecond-precision `updatedAt`; stale changes return `409 Conflict` and
+must be refreshed. Browser mutations require strict JSON and an `Origin` exactly matching
+`WEB_ORIGIN`.
+
+All moderation queries use explicit Prisma selections and never select the incident contact
+relation, encrypted contact values, staff security fields, or session data. This phase adds no
+contact reveal, decryption, staff notes, duplicate marking, arbitrary incident editing, deletion,
+bulk actions, media, maps, notifications, analytics, or public tracking. It is not a claim of
+production readiness.
 
 ## Environment variables
 
@@ -315,9 +339,9 @@ placeholder URLs. It does not start PostgreSQL or run migrations.
 
 This repository contains application bootstrapping, bilingual public pages, environment
 validation, database connectivity, local tooling, foundational tests, anonymous incident
-submission, secure staff authentication, and the read-only incident review interface described
+submission, secure staff authentication, and the controlled incident workflow described
 above. It intentionally does **not** implement public tracking, reporter accounts, contact reveal,
-workflow actions, staff notes, incident editing or deletion, media uploads, device-location
+staff notes, arbitrary incident editing or deletion, media uploads, device-location
 access, maps, production category management, news or editorial workflows, dashboards, analytics,
 object storage, notifications, Redis, queues, outbox events, audit-log business logic, Kubernetes,
 microservices, or Kafka. The platform remains an incremental foundation and is not a claim of
