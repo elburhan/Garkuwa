@@ -83,7 +83,7 @@ describe('admin authentication web foundation', () => {
     expect(document.body.textContent).not.toContain('database detail');
   });
 
-  it('renders a minimal authenticated principal without dashboard or moderation tools', () => {
+  it('renders a minimal authenticated principal with only the read-only queue entry point', () => {
     render(
       <AdminLanding
         locale="en"
@@ -99,7 +99,8 @@ describe('admin authentication web foundation', () => {
     expect(screen.getByRole('heading', { name: 'Administration area' })).toBeTruthy();
     expect(screen.getByText('Welcome, Test Staff.')).toBeTruthy();
     expect(screen.getByText('MODERATOR')).toBeTruthy();
-    expect(screen.queryByText(/incident queue|analytics|contact reveal/i)).toBeNull();
+    expect(screen.getByRole('link', { name: 'Open incident queue' })).toBeTruthy();
+    expect(screen.queryByText(/analytics|reveal contact|change status/i)).toBeNull();
   });
 
   it('logs out with included credentials and returns to the login route', async () => {

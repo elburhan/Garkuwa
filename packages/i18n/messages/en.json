@@ -326,12 +326,97 @@
       "eyebrow": "Authenticated staff session",
       "title": "Administration area",
       "welcome": "Welcome, {name}.",
-      "description": "The staff authentication foundation is active. Incident moderation and dashboard tools have not been added yet.",
+      "description": "Use the read-only incident queue to review submitted reports. Workflow actions and contact access are not available.",
       "email": "Email",
       "role": "Role",
+      "incidentQueue": "Open incident queue",
       "logout": "Sign out",
       "loggingOut": "Signing out…",
       "logoutError": "Sign out could not be completed. Please try again."
+    },
+    "incidents": {
+      "queue": {
+        "eyebrow": "Read-only moderation",
+        "title": "Incident queue",
+        "description": "Review submitted incidents without changing their status, assignment, or confidential contact information.",
+        "resultCount": "{count} incidents",
+        "filters": "Filter incidents",
+        "applyFilters": "Apply filters",
+        "clearFilters": "Clear filters",
+        "search": "Search case ID or location",
+        "status": "Status",
+        "severity": "Severity",
+        "category": "Category",
+        "allCategories": "All categories",
+        "submissionLanguage": "Submission language",
+        "state": "State",
+        "lga": "Local government area",
+        "dateFrom": "Submitted from",
+        "dateTo": "Submitted to",
+        "sort": "Sort",
+        "all": "All",
+        "caseId": "Case ID",
+        "location": "Location",
+        "submitted": "Submitted",
+        "assigned": "Assigned",
+        "unassigned": "Unassigned",
+        "noResults": "No incidents match these filters.",
+        "error": "The incident queue could not be loaded safely. Please try again.",
+        "loading": "Loading incident queue…",
+        "previous": "Previous page",
+        "next": "Next page",
+        "page": "Page {page} of {total}",
+        "openIncident": "Open incident {caseId}"
+      },
+      "detail": {
+        "eyebrow": "Incident record",
+        "title": "Incident detail",
+        "back": "Back to incident queue",
+        "readOnly": "This view is read-only. Contact details and workflow actions are not available.",
+        "description": "Report description",
+        "incidentDate": "Incident date",
+        "incidentTime": "Incident time",
+        "locationDescription": "Location description",
+        "coordinates": "Coordinates",
+        "submittedAt": "Submitted",
+        "updatedAt": "Last updated",
+        "closedAt": "Closed",
+        "statusHistory": "Status history",
+        "changedBy": "Changed by",
+        "system": "System",
+        "comment": "Comment",
+        "noHistory": "No status history is available.",
+        "notFound": "The requested incident could not be found.",
+        "error": "The incident could not be loaded safely. Please try again."
+      },
+      "accessDenied": {
+        "title": "Access denied",
+        "description": "Your staff role does not permit access to incident moderation records.",
+        "back": "Return to administration"
+      },
+      "status": {
+        "NEW": "New",
+        "UNDER_REVIEW": "Under review",
+        "ACTIONED": "Actioned",
+        "CLOSED": "Closed",
+        "REJECTED": "Rejected"
+      },
+      "severity": {
+        "LOW": "Low",
+        "MEDIUM": "Medium",
+        "HIGH": "High"
+      },
+      "language": {
+        "ha": "Hausa",
+        "en": "English"
+      },
+      "sort": {
+        "newest": "Newest first",
+        "oldest": "Oldest first",
+        "severity": "Severity",
+        "status": "Status"
+      },
+      "notProvided": "Not provided"
     }
   }
 }
