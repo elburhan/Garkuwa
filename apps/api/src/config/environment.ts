@@ -27,15 +27,26 @@ if (workspaceEnvironmentPath) {
   loadEnv({ path: workspaceEnvironmentPath, quiet: true });
 }
 
-const apiEnvironmentSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  API_PORT: z.coerce.number().int().min(1).max(65_535),
-  WEB_ORIGIN: z.url(),
-  DATABASE_URL: z.url().startsWith('postgresql://'),
-  CONTACT_DATA_ENCRYPTION_KEY: z.string().refine(isValidContactDataEncryptionKey, {
-    message: 'must be canonical base64 that decodes to exactly 32 bytes',
-  }),
-});
+const apiEnvironmentSchema = z
+  .object({
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    API_PORT: z.coerce.number().int().min(1).max(65_535),
+    WEB_ORIGIN: z.url(),
+    DATABASE_URL: z.url().startsWith('postgresql://'),
+    CONTACT_DATA_ENCRYPTION_KEY: z.string().refine(isValidContactDataEncryptionKey, {
+      message: 'must be canonical base64 that decodes to exactly 32 bytes',
+    }),
+    STAFF_SESSION_COOKIE_SECURE: z.enum(['true', 'false']).transform((value) => value === 'true'),
+  })
+  .superRefine((environment, context) => {
+    if (environment.NODE_ENV === 'production' && !environment.STAFF_SESSION_COOKIE_SECURE) {
+      context.addIssue({
+        code: 'custom',
+        path: ['STAFF_SESSION_COOKIE_SECURE'],
+        message: 'must be true when NODE_ENV is production',
+      });
+    }
+  });
 
 export type ApiEnvironment = z.infer<typeof apiEnvironmentSchema>;
 
