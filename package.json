@@ -19,6 +19,7 @@
     "db:status": "pnpm --filter @garkuwa/api db:status",
     "db:studio": "pnpm --filter @garkuwa/api db:studio",
     "db:verify": "pnpm --filter @garkuwa/api db:verify",
+    "staff:set-password": "pnpm --filter @garkuwa/api staff:set-password",
     "docker:up": "node ./scripts/docker-compose.mjs up",
     "docker:down": "node ./scripts/docker-compose.mjs down"
   },

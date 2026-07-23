@@ -302,6 +302,36 @@
   },
   "admin": {
     "title": "Administration area",
-    "placeholder": "The administration area has not been implemented yet."
+    "placeholder": "The administration area has not been implemented yet.",
+    "login": {
+      "eyebrow": "Staff access only",
+      "title": "Sign in to administration",
+      "description": "Use an approved Garkuwa Foundation staff account.",
+      "email": "Staff email",
+      "password": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "signIn": "Sign in",
+      "signingIn": "Signing in…",
+      "invalidCredentials": "The supplied credentials could not be accepted.",
+      "tooManyAttempts": "There have been too many login attempts. Wait before trying again.",
+      "sessionExpired": "Your staff session has expired. Sign in again to continue.",
+      "networkError": "The sign-in service could not be reached. Please try again.",
+      "securityNotice": "Do not share your password. This page will not request it by message or telephone call.",
+      "languageLabel": "Administration language",
+      "hausa": "Hausa",
+      "english": "English"
+    },
+    "landing": {
+      "eyebrow": "Authenticated staff session",
+      "title": "Administration area",
+      "welcome": "Welcome, {name}.",
+      "description": "The staff authentication foundation is active. Incident moderation and dashboard tools have not been added yet.",
+      "email": "Email",
+      "role": "Role",
+      "logout": "Sign out",
+      "loggingOut": "Signing out…",
+      "logoutError": "Sign out could not be completed. Please try again."
+    }
   }
 }

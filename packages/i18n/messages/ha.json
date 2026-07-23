@@ -302,6 +302,36 @@
   },
   "admin": {
     "title": "Sashen gudanarwa",
-    "placeholder": "Ba a fara gina sashen gudanarwa ba tukuna."
+    "placeholder": "Ba a fara gina sashen gudanarwa ba tukuna.",
+    "login": {
+      "eyebrow": "Ga ma'aikata kawai",
+      "title": "Shiga sashen gudanarwa",
+      "description": "Yi amfani da asusun ma'aikacin Gidauniyar Garkuwa da aka amince da shi.",
+      "email": "Imel na ma'aikaci",
+      "password": "Kalmar sirri",
+      "showPassword": "Nuna kalmar sirri",
+      "hidePassword": "Ɓoye kalmar sirri",
+      "signIn": "Shiga",
+      "signingIn": "Ana shiga…",
+      "invalidCredentials": "Ba a iya shiga da waɗannan bayanai ba.",
+      "tooManyAttempts": "An yi yunƙurin shiga sau da yawa. Jira kaɗan kafin sake gwadawa.",
+      "sessionExpired": "Zaman aikinka ya ƙare. Sake shiga domin ci gaba.",
+      "networkError": "Ba a iya haɗawa da sabis ɗin shiga ba. Sake gwadawa.",
+      "securityNotice": "Kada ka raba kalmar sirrinka. Ba a buƙatar kalmar sirri ta hanyar saƙo ko kiran waya daga wannan shafin.",
+      "languageLabel": "Harshen sashen gudanarwa",
+      "hausa": "Hausa",
+      "english": "English"
+    },
+    "landing": {
+      "eyebrow": "An tabbatar da zaman ma'aikaci",
+      "title": "Sashen gudanarwa",
+      "welcome": "Barka da zuwa, {name}.",
+      "description": "An kammala tushen shiga na ma'aikata. Ba a ƙara kayan gudanar da rahoto ko wasu ayyukan dashboard ba tukuna.",
+      "email": "Imel",
+      "role": "Matsayi",
+      "logout": "Fita",
+      "loggingOut": "Ana fita…",
+      "logoutError": "Ba a iya kammala fita ba. Sake gwadawa."
+    }
   }
 }

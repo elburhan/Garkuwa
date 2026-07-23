@@ -178,6 +178,46 @@ pnpm db:migrate
 pnpm db:status
 ```
 
+## Staff authentication foundation
+
+The unprefixed `/admin/login` route provides Hausa and English staff sign-in, while `/admin` is a
+minimal protected landing page. It contains no moderation queue, incident details, dashboard
+metrics, contact reveal, or editorial tooling.
+
+The API exposes `POST /api/auth/staff/login`, `GET /api/auth/staff/me`, and
+`POST /api/auth/staff/logout`. Staff passwords use Argon2id with 19 MiB memory, two iterations,
+and one lane. Five failed account attempts cause a temporary 15-minute lock. A separate in-memory
+IP limit permits five login requests per 15 minutes per API instance; a shared limiter is required
+before horizontal scaling.
+
+Successful login creates a cryptographically random opaque token. Only its SHA-256 hash is stored
+in `staff_sessions`; the raw token is sent in the `garkuwa_staff_session` cookie with `HttpOnly`,
+`SameSite=Lax`, and `Path=/`. Sessions have an absolute eight-hour expiry, are not sliding, and
+are revoked on logout or password change. The cookie is not available to browser JavaScript, and
+the web application stores no JWT or authentication token in localStorage or sessionStorage.
+
+Set `STAFF_SESSION_COOKIE_SECURE=false` only for local HTTP development. Production must use HTTPS
+and set it to `true`. Login and logout reject requests whose `Origin` does not exactly match the
+validated `WEB_ORIGIN`; CORS uses that same single origin with credentials and never uses a
+wildcard. Production deployment must keep the web and API cookie topology on the same trusted
+site so server-rendered admin pages can forward the cookie for session verification.
+
+No default staff password or user is created. To set or replace the password of an existing staff
+row, provide the password temporarily through the process environment and identify the existing
+normalized email explicitly:
+
+```powershell
+$env:STAFF_BOOTSTRAP_PASSWORD = Read-Host -AsSecureString | ConvertFrom-SecureString -AsPlainText
+pnpm staff:set-password --email staff@example.org
+Remove-Item Env:STAFF_BOOTSTRAP_PASSWORD
+```
+
+On macOS or Linux, use a temporary environment variable without placing the value in shell
+history where possible. The command never prints the password, refuses unknown users, resets the
+temporary lock, and revokes existing sessions. There is no registration, password reset, email
+verification, MFA, OAuth, social login, remember-me session, or refresh token yet. MFA and password
+recovery require separate reviewed workflows before production readiness.
+
 ## Environment variables
 
 Create `.env` only at the repository root. Next.js and Prisma resolve that file from their
@@ -198,6 +238,9 @@ node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
 Do not commit generated keys or reuse development keys in production. Losing the key makes the
 encrypted contact values unrecoverable.
 
+`STAFF_SESSION_COOKIE_SECURE` is also required and accepts only `true` or `false`. Use `false` for
+local HTTP development and `true` for every HTTPS production deployment.
+
 `NEXT_PUBLIC_API_BASE_URL` must be the public API prefix, such as
 `http://localhost:4000/api` for local development. The web client validates this URL and safely
 normalizes a trailing slash. Production deployment can override it without changing components;
@@ -217,6 +260,7 @@ pnpm db:generate     # generate Prisma Client
 pnpm db:migrate      # create or apply a development migration against a live database
 pnpm db:status       # compare checked-in migrations with a live database
 pnpm db:verify       # verify PostgreSQL reachability and PostGIS activation
+pnpm staff:set-password --email staff@example.org # explicitly set an existing staff password
 pnpm db:studio       # open Prisma Studio
 pnpm docker:up       # start PostgreSQL/PostGIS
 pnpm docker:down     # stop PostgreSQL/PostGIS
