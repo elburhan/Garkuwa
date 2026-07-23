@@ -59,11 +59,12 @@ model User {
   createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  assignedIncidents     Incident[]                  @relation("IncidentAssignee")
-  incidentStatusChanges IncidentStatusHistory[]     @relation("IncidentStatusChangedBy")
-  assignmentsFrom       IncidentAssignmentHistory[] @relation("IncidentAssignmentFromUser")
-  assignmentsTo         IncidentAssignmentHistory[] @relation("IncidentAssignmentToUser")
-  assignmentChanges     IncidentAssignmentHistory[] @relation("IncidentAssignmentChangedBy")
+  assignedIncidents     Incident[]                     @relation("IncidentAssignee")
+  incidentStatusChanges IncidentStatusHistory[]        @relation("IncidentStatusChangedBy")
+  assignmentsFrom       IncidentAssignmentHistory[]    @relation("IncidentAssignmentFromUser")
+  assignmentsTo         IncidentAssignmentHistory[]    @relation("IncidentAssignmentToUser")
+  assignmentChanges     IncidentAssignmentHistory[]    @relation("IncidentAssignmentChangedBy")
+  contactAccesses       IncidentContactAccessHistory[]
   sessions              StaffSession[]
 
   @@index([role, status])
@@ -124,13 +125,14 @@ model Incident {
   updatedAt             DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
   closedAt              DateTime?          @map("closed_at") @db.Timestamptz(3)
 
-  category            IncidentCategory            @relation(fields: [categoryId], references: [id])
-  assignedToUser      User?                       @relation("IncidentAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
-  duplicateOfIncident Incident?                   @relation("IncidentDuplicates", fields: [duplicateOfIncidentId], references: [id], onDelete: SetNull)
-  duplicates          Incident[]                  @relation("IncidentDuplicates")
-  contact             IncidentContact?
-  statusHistory       IncidentStatusHistory[]
-  assignmentHistory   IncidentAssignmentHistory[]
+  category             IncidentCategory               @relation(fields: [categoryId], references: [id])
+  assignedToUser       User?                          @relation("IncidentAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  duplicateOfIncident  Incident?                      @relation("IncidentDuplicates", fields: [duplicateOfIncidentId], references: [id], onDelete: SetNull)
+  duplicates           Incident[]                     @relation("IncidentDuplicates")
+  contact              IncidentContact?
+  statusHistory        IncidentStatusHistory[]
+  assignmentHistory    IncidentAssignmentHistory[]
+  contactAccessHistory IncidentContactAccessHistory[]
 
   @@index([categoryId, status])
   @@index([status, severity, submittedAt])
@@ -150,7 +152,8 @@ model IncidentContact {
   consentToContact        Boolean                @map("consent_to_contact")
   createdAt               DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  incident      Incident                       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  accessHistory IncidentContactAccessHistory[]
 
   @@map("incident_contacts")
 }
@@ -191,4 +194,21 @@ model IncidentAssignmentHistory {
   @@index([toUserId])
   @@index([changedByUserId])
   @@map("incident_assignment_history")
+}
+
+model IncidentContactAccessHistory {
+  id               String   @id @default(uuid()) @db.Uuid
+  incidentId       String   @map("incident_id") @db.Uuid
+  contactId        String   @map("contact_id") @db.Uuid
+  accessedByUserId String   @map("accessed_by_user_id") @db.Uuid
+  reason           String   @db.VarChar(1000)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  incident   Incident        @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  contact    IncidentContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  accessedBy User            @relation(fields: [accessedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([incidentId, createdAt])
+  @@index([accessedByUserId, createdAt])
+  @@map("incident_contact_access_history")
 }

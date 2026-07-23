@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Inject, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 
 import { StaffRole } from '../../../generated/prisma/enums.js';
 import { StaffRoles } from '../../auth/staff-roles.decorator.js';
@@ -23,6 +35,12 @@ import type {
   UpdateIncidentStatusDto,
 } from '../workflow/dto/incident-workflow.dto.js';
 import { IncidentWorkflowService } from '../workflow/incident-workflow.service.js';
+import {
+  ContactAccessZodPipe,
+  type ContactAccessRequestDto,
+} from '../contact-access/dto/contact-access.dto.js';
+import { ContactAccessRateLimitGuard } from '../contact-access/contact-access-rate-limit.guard.js';
+import { IncidentContactAccessService } from '../contact-access/incident-contact-access.service.js';
 
 const incidentViewerRoles = [
   StaffRole.SUPER_ADMIN,
@@ -38,6 +56,8 @@ export class AdminIncidentsController {
   constructor(
     @Inject(AdminIncidentsService) private readonly incidents: AdminIncidentsService,
     @Inject(IncidentWorkflowService) private readonly workflow: IncidentWorkflowService,
+    @Inject(IncidentContactAccessService)
+    private readonly contactAccess: IncidentContactAccessService,
   ) {}
 
   @Get()
@@ -83,5 +103,26 @@ export class AdminIncidentsController {
     @Req() request: StaffAuthRequest,
   ) {
     return this.workflow.updateAssignment(parameters.incidentId, input, request.staffPrincipal!);
+  }
+
+  @Post(':incidentId/contact-access')
+  @Header('Cache-Control', 'no-store')
+  @StaffRoles(StaffRole.SUPER_ADMIN, StaffRole.ADMIN)
+  @UseGuards(StaffAuthOriginGuard, JsonContentTypeGuard, ContactAccessRateLimitGuard)
+  revealContact(
+    @Param(new AdminIncidentsZodPipe(incidentIdParamSchema)) parameters: IncidentIdParam,
+    @Body(new ContactAccessZodPipe()) input: ContactAccessRequestDto,
+    @Req() request: StaffAuthRequest,
+  ) {
+    return this.contactAccess.reveal(parameters.incidentId, input, request.staffPrincipal!);
+  }
+
+  @Get(':incidentId/contact-access-history')
+  @Header('Cache-Control', 'no-store')
+  @StaffRoles(StaffRole.SUPER_ADMIN, StaffRole.ADMIN)
+  contactAccessHistory(
+    @Param(new AdminIncidentsZodPipe(incidentIdParamSchema)) parameters: IncidentIdParam,
+  ) {
+    return this.contactAccess.history(parameters.incidentId);
   }
 }

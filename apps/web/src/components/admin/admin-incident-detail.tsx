@@ -1,8 +1,13 @@
 import Link from 'next/link';
 
 import { getMessages, type Locale } from '@/i18n';
-import type { AdminIncidentDetail, EligibleAssignee } from '@/lib/admin-incidents-api';
+import type {
+  AdminIncidentDetail,
+  ContactAccessHistory,
+  EligibleAssignee,
+} from '@/lib/admin-incidents-api';
 
+import { AdminContactAccessPanel } from './admin-contact-access-panel';
 import { AdminIncidentWorkflowControls } from './admin-incident-workflow-controls';
 
 export function AdminIncidentDetailView({
@@ -10,11 +15,13 @@ export function AdminIncidentDetailView({
   incident,
   role,
   eligibleAssignees = [],
+  contactAccessHistory,
 }: Readonly<{
   locale: Locale;
   incident: AdminIncidentDetail;
   role: 'SUPER_ADMIN' | 'ADMIN' | 'MODERATOR' | 'ANALYST';
   eligibleAssignees?: readonly EligibleAssignee[];
+  contactAccessHistory?: ContactAccessHistory['items'];
 }>) {
   const messages = getMessages(locale).admin.incidents;
   const dateFormatter = new Intl.DateTimeFormat(locale === 'ha' ? 'ha-NG' : 'en-NG', {
@@ -146,6 +153,14 @@ export function AdminIncidentDetailView({
         role={role}
         eligibleAssignees={eligibleAssignees}
       />
+
+      {role === 'SUPER_ADMIN' || role === 'ADMIN' ? (
+        <AdminContactAccessPanel
+          locale={locale}
+          incidentId={incident.id}
+          history={contactAccessHistory ?? []}
+        />
+      ) : null}
 
       <section className="admin-detail-card" aria-labelledby="status-history-title">
         <h2 id="status-history-title">{messages.detail.statusHistory}</h2>

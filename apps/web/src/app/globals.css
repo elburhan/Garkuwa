@@ -1243,6 +1243,36 @@ h3 {
   font-weight: 800;
 }
 
+.admin-contact-access fieldset {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 0.0625rem solid var(--color-warning-border);
+  border-radius: var(--radius-small);
+}
+
+.admin-contact-access legend,
+.admin-contact-access label:not(.checkbox-label) {
+  font-weight: 800;
+}
+
+.admin-contact-access textarea {
+  width: 100%;
+  min-height: 7rem;
+  padding: 0.65rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 0.1rem solid #aeb9b1;
+  border-radius: var(--radius-small);
+  font: inherit;
+  resize: vertical;
+}
+
+.admin-contact-access [tabindex='-1']:focus {
+  outline: 0.2rem solid var(--color-focus);
+  outline-offset: 0.25rem;
+}
+
 @media (min-width: 42rem) {
   .content-width {
     width: min(100% - 3rem, var(--content-width));
