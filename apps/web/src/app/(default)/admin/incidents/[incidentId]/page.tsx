@@ -13,6 +13,7 @@ import {
   loadEligibleAssignees,
   loadStaffNotes,
   loadIncidentAttachments,
+  loadAttachmentSecurityReviews,
 } from '@/lib/admin-incidents-api';
 
 export const metadata: Metadata = { title: 'Cikakken rahoton lamari | Gidauniyar Garkuwa' };
@@ -59,6 +60,22 @@ export default async function AdminIncidentDetailPage({
   ) {
     redirect(`/admin/login?lang=${locale}&reason=expired`);
   }
+  const attachmentItems = attachments.kind === 'success' ? attachments.data.items : [];
+  const reviewResults = await Promise.all(
+    attachmentItems.map(async (attachment) => ({
+      attachmentId: attachment.id,
+      result: await loadAttachmentSecurityReviews(incidentId, attachment.id),
+    })),
+  );
+  if (reviewResults.some(({ result: review }) => review.kind === 'unauthenticated')) {
+    redirect(`/admin/login?lang=${locale}&reason=expired`);
+  }
+  const attachmentReviews = Object.fromEntries(
+    reviewResults.map(({ attachmentId, result: review }) => [
+      attachmentId,
+      review.kind === 'success' ? review.data.items : [],
+    ]),
+  );
   return (
     <AdminIncidentDetailView
       locale={locale}
@@ -70,7 +87,8 @@ export default async function AdminIncidentDetailPage({
         contactHistory?.kind === 'success' ? contactHistory.data.items : undefined
       }
       staffNotes={staffNotes.kind === 'success' ? staffNotes.data.items : []}
-      attachments={attachments.kind === 'success' ? attachments.data.items : []}
+      attachments={attachmentItems}
+      attachmentReviews={attachmentReviews}
     />
   );
 }

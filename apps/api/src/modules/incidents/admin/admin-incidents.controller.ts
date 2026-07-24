@@ -59,6 +59,12 @@ import {
 import { IncidentStaffNotesService } from '../staff-notes/incident-staff-notes.service.js';
 import { StaffNoteRateLimitGuard } from '../staff-notes/staff-note-rate-limit.guard.js';
 import { IncidentAttachmentsService } from '../attachments/incident-attachments.service.js';
+import {
+  AttachmentSecurityReviewZodPipe,
+  type AttachmentSecurityReviewDto,
+} from '../attachments/security-review/dto/attachment-security-review.dto.js';
+import { AttachmentSecurityReviewService } from '../attachments/security-review/attachment-security-review.service.js';
+import { AttachmentReviewRateLimitGuard } from '../attachments/security-review/attachment-review-rate-limit.guard.js';
 
 interface AttachmentHttpResponse extends NodeJS.WritableStream {
   set(headers: Record<string, string>): void;
@@ -84,6 +90,8 @@ export class AdminIncidentsController {
     private readonly staffNotes: IncidentStaffNotesService,
     @Inject(IncidentAttachmentsService)
     private readonly attachments: IncidentAttachmentsService,
+    @Inject(AttachmentSecurityReviewService)
+    private readonly attachmentReviews: AttachmentSecurityReviewService,
   ) {}
 
   @Get()
@@ -246,5 +254,29 @@ export class AdminIncidentsController {
       'Accept-Ranges': 'none',
     });
     content.stream.pipe(response);
+  }
+
+  @Patch(':incidentId/attachments/:attachmentId/security-review')
+  @Header('Cache-Control', 'private, no-store')
+  @StaffRoles(StaffRole.SUPER_ADMIN, StaffRole.ADMIN)
+  @UseGuards(StaffAuthOriginGuard, JsonContentTypeGuard, AttachmentReviewRateLimitGuard)
+  securityReview(
+    @Param('incidentId', new ParseUUIDPipe()) incidentId: string,
+    @Param('attachmentId', new ParseUUIDPipe()) attachmentId: string,
+    @Body(new AttachmentSecurityReviewZodPipe())
+    input: AttachmentSecurityReviewDto,
+    @Req() request: StaffAuthRequest,
+  ) {
+    return this.attachmentReviews.review(incidentId, attachmentId, input, request.staffPrincipal!);
+  }
+
+  @Get(':incidentId/attachments/:attachmentId/security-reviews')
+  @Header('Cache-Control', 'private, no-store')
+  securityReviewHistory(
+    @Param('incidentId', new ParseUUIDPipe()) incidentId: string,
+    @Param('attachmentId', new ParseUUIDPipe()) attachmentId: string,
+    @Req() request: StaffAuthRequest,
+  ) {
+    return this.attachmentReviews.history(incidentId, attachmentId, request.staffPrincipal!);
   }
 }
