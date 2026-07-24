@@ -349,10 +349,33 @@ metadata-only. Each authorized content initiation creates an audit row. Delivery
 no-store, `nosniff`, CSP-restricted, and uses attachment disposition. It does not prove download
 completion.
 
+`SUPER_ADMIN` and `ADMIN` may make one terminal manual security-review decision through
+`PATCH /api/admin/incidents/:incidentId/attachments/:attachmentId/security-review`.
+Only `QUARANTINED → AVAILABLE` and `QUARANTINED → REJECTED` are permitted; completed decisions
+cannot be reopened or reversed. Every decision requires a 10–1000 character reason, the
+attachment's current `updatedAt` value, strict JSON, an exact trusted `Origin`, and an
+acknowledgement in the web interface. A stale timestamp returns `409 Conflict`. The conditional
+attachment update and immutable review record are committed in one transaction.
+
+Review history is available to authenticated incident readers at
+`GET /api/admin/incidents/:incidentId/attachments/:attachmentId/security-reviews`.
+`SUPER_ADMIN` and `ADMIN` see the approved review reason; `MODERATOR` and `ANALYST` see the
+decision, source, date, and minimal reviewer identity with the reason withheld. `EDITOR` remains
+blocked. Review mutations are limited to 20 attempts per staff user per 15 minutes per API
+instance; horizontal scaling will require a shared limiter store.
+
+Manual approval means only “approved for controlled staff access.” It is not proof that a file
+is virus-free, malware-free, or completely safe. Quarantined content remains unavailable through
+the application, including to reviewers. Until a trusted scanner is integrated, examination must
+occur through an institutionally approved isolated process outside the ordinary content-delivery
+endpoint. The code defines only a future scanner interface: no provider, automatic `CLEAN`
+decision, callback, webhook, scheduled job, or quarantine bypass exists. Future scanner
+authentication and operational policy remain pending.
+
 Staff notes do not accept files. There is no public gallery, reporter tracking, staff upload,
-bulk download, attachment deletion UI, messaging, or notification. Evidence retention and
-deletion rules require institutional/legal approval; no retention period is invented. This is not
-a production-readiness claim.
+bulk review, bulk download, attachment deletion UI, messaging, or notification. Evidence
+retention and deletion rules require institutional/legal approval; no retention period is
+invented. This is not a production-readiness claim.
 
 ## Environment variables
 

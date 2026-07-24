@@ -131,6 +131,28 @@ const incidentAttachmentsSchema = z.object({
       status: z.enum(['QUARANTINED', 'AVAILABLE', 'REJECTED']),
       uploadedAt: z.string(),
       availableAt: z.string().nullable(),
+      updatedAt: z.string(),
+      reviewedAt: z.string().nullable(),
+      reviewSource: z.enum(['MANUAL', 'SCANNER']).nullable(),
+    }),
+  ),
+});
+const attachmentSecurityReviewsSchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.uuid(),
+      decision: z.enum(['AVAILABLE', 'REJECTED']),
+      reviewSource: z.enum(['MANUAL', 'SCANNER']),
+      reason: z.string().nullable(),
+      reviewedAt: z.string(),
+      reviewedBy: staffSummarySchema.nullable(),
+      scanner: z
+        .object({
+          engine: z.string().nullable(),
+          engineVersion: z.string().nullable(),
+          signature: z.string().nullable(),
+        })
+        .nullable(),
     }),
   ),
 });
@@ -146,6 +168,7 @@ export type ContactAccessHistory = z.infer<typeof contactAccessHistorySchema>;
 export type StaffNotes = z.infer<typeof staffNotesSchema>;
 export type StaffNote = StaffNotes['items'][number];
 export type IncidentAttachments = z.infer<typeof incidentAttachmentsSchema>;
+export type AttachmentSecurityReviews = z.infer<typeof attachmentSecurityReviewsSchema>;
 
 export type AdminApiResult<T> =
   | { kind: 'success'; data: T }
@@ -258,5 +281,12 @@ export function loadIncidentAttachments(incidentId: string) {
   return authenticatedGet(
     `admin/incidents/${encodeURIComponent(incidentId)}/attachments`,
     incidentAttachmentsSchema,
+  );
+}
+
+export function loadAttachmentSecurityReviews(incidentId: string, attachmentId: string) {
+  return authenticatedGet(
+    `admin/incidents/${encodeURIComponent(incidentId)}/attachments/${encodeURIComponent(attachmentId)}/security-reviews`,
+    attachmentSecurityReviewsSchema,
   );
 }

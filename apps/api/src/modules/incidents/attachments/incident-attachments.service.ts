@@ -16,6 +16,10 @@ const metadataSelect = {
   status: true,
   uploadedAt: true,
   availableAt: true,
+  updatedAt: true,
+  securityReview: {
+    select: { createdAt: true, reviewSource: true },
+  },
 } as const;
 
 @Injectable()
@@ -37,10 +41,13 @@ export class IncidentAttachmentsService {
       orderBy: [{ uploadedAt: 'asc' }, { id: 'asc' }],
     });
     return {
-      items: rows.map((row) => ({
+      items: rows.map(({ securityReview, ...row }) => ({
         ...row,
         uploadedAt: row.uploadedAt.toISOString(),
         availableAt: row.availableAt?.toISOString() ?? null,
+        updatedAt: row.updatedAt.toISOString(),
+        reviewedAt: securityReview?.createdAt.toISOString() ?? null,
+        reviewSource: securityReview?.reviewSource ?? null,
       })),
     };
   }

@@ -39,6 +39,14 @@ import {
   INCIDENT_STORAGE_ROOT,
 } from './attachments/filesystem-incident-object-storage.js';
 import { INCIDENT_OBJECT_STORAGE } from './attachments/incident-object-storage.js';
+import {
+  ATTACHMENT_REVIEW_CLOCK,
+  AttachmentReviewRateLimitGuard,
+} from './attachments/security-review/attachment-review-rate-limit.guard.js';
+import {
+  ATTACHMENT_SECURITY_REVIEW_CLOCK,
+  AttachmentSecurityReviewService,
+} from './attachments/security-review/attachment-security-review.service.js';
 
 @Module({
   imports: [AuthModule],
@@ -55,6 +63,8 @@ import { INCIDENT_OBJECT_STORAGE } from './attachments/incident-object-storage.j
     IncidentStaffNotesService,
     StaffNoteRateLimitGuard,
     IncidentAttachmentsService,
+    AttachmentSecurityReviewService,
+    AttachmentReviewRateLimitGuard,
     FilesystemIncidentObjectStorage,
     IncidentCategoriesService,
     IncidentSubmissionService,
@@ -92,6 +102,14 @@ import { INCIDENT_OBJECT_STORAGE } from './attachments/incident-object-storage.j
     },
     {
       provide: STAFF_NOTE_CLOCK,
+      useValue: Date.now,
+    },
+    {
+      provide: ATTACHMENT_REVIEW_CLOCK,
+      useValue: Date.now,
+    },
+    {
+      provide: ATTACHMENT_SECURITY_REVIEW_CLOCK,
       useValue: Date.now,
     },
   ],

@@ -77,6 +77,9 @@ describe('incident attachment web integration', () => {
         status: 'AVAILABLE' as const,
         uploadedAt: '2026-07-23T12:00:00.000Z',
         availableAt: '2026-07-23T12:05:00.000Z',
+        updatedAt: '2026-07-23T12:05:00.000Z',
+        reviewedAt: '2026-07-23T12:05:00.000Z',
+        reviewSource: 'MANUAL' as const,
       },
     ];
     const { rerender, container } = render(

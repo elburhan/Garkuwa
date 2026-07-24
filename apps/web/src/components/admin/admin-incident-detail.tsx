@@ -7,12 +7,14 @@ import type {
   EligibleAssignee,
   StaffNotes,
   IncidentAttachments,
+  AttachmentSecurityReviews,
 } from '@/lib/admin-incidents-api';
 import { webEnvironment } from '@/lib/env';
 
 import { AdminContactAccessPanel } from './admin-contact-access-panel';
 import { AdminIncidentNotes } from './admin-incident-notes';
 import { AdminIncidentWorkflowControls } from './admin-incident-workflow-controls';
+import { AdminAttachmentSecurityReview } from './admin-attachment-security-review';
 
 export function AdminIncidentDetailView({
   locale,
@@ -23,6 +25,7 @@ export function AdminIncidentDetailView({
   staffNotes = [],
   principalId,
   attachments = [],
+  attachmentReviews = {},
 }: Readonly<{
   locale: Locale;
   incident: AdminIncidentDetail;
@@ -32,6 +35,7 @@ export function AdminIncidentDetailView({
   staffNotes?: StaffNotes['items'];
   principalId?: string;
   attachments?: IncidentAttachments['items'];
+  attachmentReviews?: Readonly<Record<string, AttachmentSecurityReviews['items']>>;
 }>) {
   const messages = getMessages(locale).admin.incidents;
   const dateFormatter = new Intl.DateTimeFormat(locale === 'ha' ? 'ha-NG' : 'en-NG', {
@@ -229,6 +233,13 @@ export function AdminIncidentDetailView({
                 ) : role === 'ANALYST' ? (
                   <p>{messages.attachments.metadataOnly}</p>
                 ) : null}
+                <AdminAttachmentSecurityReview
+                  locale={locale}
+                  incidentId={incident.id}
+                  attachment={attachment}
+                  role={role}
+                  reviews={attachmentReviews[attachment.id] ?? []}
+                />
               </li>
             ))}
           </ul>
