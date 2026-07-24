@@ -182,7 +182,7 @@ pnpm db:status
 ## Staff authentication foundation
 
 The unprefixed `/admin/login` route provides Hausa and English staff sign-in, while `/admin` is a
-minimal protected landing page.
+protected read-only operations dashboard.
 
 The API exposes `POST /api/auth/staff/login`, `GET /api/auth/staff/me`, and
 `POST /api/auth/staff/logout`. Staff passwords use Argon2id with 19 MiB memory, two iterations,
@@ -217,6 +217,36 @@ history where possible. The command never prints the password, refuses unknown u
 temporary lock, and revokes existing sessions. There is no registration, password reset, email
 verification, MFA, OAuth, social login, remember-me session, or refresh token yet. MFA and password
 recovery require separate reviewed workflows before production readiness.
+
+## Administrative operations dashboard
+
+Authenticated `SUPER_ADMIN`, `ADMIN`, `MODERATOR`, and `ANALYST` staff can use `/admin` and
+`GET /api/admin/dashboard/operations`. `EDITOR` is denied. Supported ranges are `7d`, `30d`, and
+`90d`, with `30d` as the default. Ranges represent trailing UTC calendar days including the
+current UTC date; the current workload cards and distributions always describe current database
+state.
+
+The overview defines open incidents as `NEW`, `UNDER_REVIEW`, or `ACTIONED`. Unassigned counts
+include only those same open statuses. `CLOSED` and `REJECTED` remain separate. Status and severity
+distributions include every enum value, including zero counts. Daily submission trends are
+grouped by `submittedAt` using UTC dates and missing dates are filled with zero.
+
+Assignment workload includes active `SUPER_ADMIN`, `ADMIN`, and `MODERATOR` staff and counts only
+their open assigned incidents. It is an operational allocation summary, not a productivity or
+performance ranking. Results are capped at 50 after querying at most 500 active eligible staff,
+which assumes the initial deployment has a bounded staff directory.
+
+Attachment workload contains only current `QUARANTINED`, `AVAILABLE`, and `REJECTED` counts.
+Recent activity is capped at 20 entries and combines incident submissions, status changes,
+assignment changes, and attachment-review decisions. It exposes only case identifiers, minimal
+actor names, timestamps, status/assignment changes, and attachment decisions.
+
+Dashboard queries never select incident descriptions, locations, coordinates, contact data or
+access reasons, staff-note content or reasons, attachment filenames/keys/hashes, security-review
+reasons, email addresses, sessions, or password fields. Responses use private no-store caching.
+There is no public dashboard, export, polling, map, contact metric, productivity score,
+predictive analytics, AI summary, third-party telemetry, snapshot table, or schema migration.
+This read-only operational view is not a production-readiness claim.
 
 ## Incident moderation and controlled workflow
 
