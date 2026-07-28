@@ -64,6 +64,7 @@ const revealResponse = {
 
 afterEach(() => {
   cleanup();
+  vi.clearAllTimers();
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
@@ -97,7 +98,9 @@ describe('restricted admin contact access', () => {
     expect(screen.getByText(/Enter 10 to 1000/i)).toBeTruthy();
     expect(globalThis.fetch).not.toHaveBeenCalled();
 
-    await user.type(screen.getByLabelText('Reason for access'), 'Approved official follow-up');
+    fireEvent.change(screen.getByLabelText('Reason for access'), {
+      target: { value: 'Approved official follow-up' },
+    });
     await user.click(screen.getByRole('button', { name: 'Reveal contact information' }));
     expect(screen.getByText(/Confirm the access acknowledgement/i)).toBeTruthy();
 
@@ -160,7 +163,9 @@ describe('restricted admin contact access', () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 429 }));
     render(<AdminContactAccessPanel locale="en" incidentId={incidentId} history={[]} />);
-    await user.type(screen.getByLabelText('Reason for access'), 'Approved official follow-up');
+    fireEvent.change(screen.getByLabelText('Reason for access'), {
+      target: { value: 'Approved official follow-up' },
+    });
     await user.click(screen.getByLabelText(/I understand that access is recorded/i));
     await user.click(screen.getByRole('button', { name: 'Reveal contact information' }));
     expect(await screen.findByText(/Too many access attempts/i)).toBeTruthy();

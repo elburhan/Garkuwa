@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -48,8 +48,12 @@ describe('admin authentication web foundation', () => {
     const storageWrite = vi.spyOn(Storage.prototype, 'setItem');
     render(<AdminLoginForm locale="en" apiBaseUrl={apiBaseUrl} sessionExpired={false} />);
 
-    await user.type(screen.getByLabelText('Staff email'), 'staff@example.test');
-    await user.type(screen.getByLabelText('Password'), 'Fake-development-password-42!');
+    fireEvent.change(screen.getByLabelText('Staff email'), {
+      target: { value: 'staff@example.test' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'Fake-development-password-42!' },
+    });
     await user.dblClick(screen.getByRole('button', { name: 'Sign in' }));
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(fetcher).toHaveBeenCalledWith(
@@ -73,8 +77,12 @@ describe('admin authentication web foundation', () => {
       ),
     );
     render(<AdminLoginForm locale="en" apiBaseUrl={apiBaseUrl} sessionExpired={false} />);
-    await user.type(screen.getByLabelText('Staff email'), 'unknown@example.test');
-    await user.type(screen.getByLabelText('Password'), 'Fake-development-password-42!');
+    fireEvent.change(screen.getByLabelText('Staff email'), {
+      target: { value: 'unknown@example.test' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'Fake-development-password-42!' },
+    });
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
     expect((await screen.findByRole('alert')).textContent).toContain(

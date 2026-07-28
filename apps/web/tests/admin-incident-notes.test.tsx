@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -111,7 +111,7 @@ describe('admin incident staff notes', () => {
       />,
     );
     const textarea = screen.getByLabelText('Note body');
-    await user.type(textarea, 'Internal test note');
+    fireEvent.change(textarea, { target: { value: 'Internal test note' } });
     await user.click(screen.getByRole('button', { name: 'Add note' }));
     const savingButton = screen.getByRole('button', { name: 'Saving…' });
     expect((savingButton.closest('fieldset') as HTMLFieldSetElement).disabled).toBe(true);
@@ -144,8 +144,9 @@ describe('admin incident staff notes', () => {
       />,
     );
     await user.click(screen.getByRole('button', { name: 'Correct note' }));
-    await user.clear(screen.getAllByLabelText('Note body')[1]!);
-    await user.type(screen.getAllByLabelText('Note body')[1]!, 'Corrected test note');
+    fireEvent.change(screen.getAllByLabelText('Note body')[1]!, {
+      target: { value: 'Corrected test note' },
+    });
     await user.click(screen.getByRole('button', { name: 'Save correction' }));
     expect(await screen.findByText(/changed elsewhere/i)).toBeTruthy();
   });

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -41,11 +41,11 @@ async function completeRequiredFields(
     screen.getByLabelText(locale === 'ha' ? /Nau'in lamari/ : /Incident category/),
     category.id,
   );
-  await user.type(
+  fireEvent.change(
     screen.getByLabelText(locale === 'ha' ? /^Bayani/ : /^Description/, {
       selector: 'textarea',
     }),
-    'A sufficiently detailed fake incident description.',
+    { target: { value: 'A sufficiently detailed fake incident description.' } },
   );
 }
 
@@ -97,10 +97,9 @@ describe('IncidentReportForm', () => {
     renderForm('ha');
     await completeRequiredFields(user, 'ha');
     await user.click(screen.getByLabelText(/Ina son a iya tuntubata/));
-    await user.type(
-      screen.getByLabelText('Imel', { selector: 'input[type="email"]' }),
-      'fake@example.test',
-    );
+    fireEvent.change(screen.getByLabelText('Imel', { selector: 'input[type="email"]' }), {
+      target: { value: 'fake@example.test' },
+    });
     await user.click(screen.getByLabelText('Imel', { selector: 'input[type="radio"]' }));
     await user.click(screen.getByLabelText(/Na yarda/));
 
