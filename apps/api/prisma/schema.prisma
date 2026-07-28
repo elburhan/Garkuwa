@@ -59,6 +59,13 @@ enum AttachmentReviewSource {
   SCANNER
 }
 
+enum NewsArticleStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
   id                  String     @id @default(uuid()) @db.Uuid
   /// Must be stored in normalized lowercase form by the future identity service.
@@ -74,21 +81,67 @@ model User {
   createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  assignedIncidents     Incident[]                        @relation("IncidentAssignee")
-  incidentStatusChanges IncidentStatusHistory[]           @relation("IncidentStatusChangedBy")
-  assignmentsFrom       IncidentAssignmentHistory[]       @relation("IncidentAssignmentFromUser")
-  assignmentsTo         IncidentAssignmentHistory[]       @relation("IncidentAssignmentToUser")
-  assignmentChanges     IncidentAssignmentHistory[]       @relation("IncidentAssignmentChangedBy")
+  assignedIncidents     Incident[]                         @relation("IncidentAssignee")
+  incidentStatusChanges IncidentStatusHistory[]            @relation("IncidentStatusChangedBy")
+  assignmentsFrom       IncidentAssignmentHistory[]        @relation("IncidentAssignmentFromUser")
+  assignmentsTo         IncidentAssignmentHistory[]        @relation("IncidentAssignmentToUser")
+  assignmentChanges     IncidentAssignmentHistory[]        @relation("IncidentAssignmentChangedBy")
   contactAccesses       IncidentContactAccessHistory[]
-  authoredIncidentNotes IncidentStaffNote[]               @relation("IncidentStaffNoteAuthor")
-  deletedIncidentNotes  IncidentStaffNote[]               @relation("IncidentStaffNoteDeletedBy")
-  noteRevisionChanges   IncidentStaffNoteRevision[]       @relation("IncidentStaffNoteRevisionChangedBy")
+  authoredIncidentNotes IncidentStaffNote[]                @relation("IncidentStaffNoteAuthor")
+  deletedIncidentNotes  IncidentStaffNote[]                @relation("IncidentStaffNoteDeletedBy")
+  noteRevisionChanges   IncidentStaffNoteRevision[]        @relation("IncidentStaffNoteRevisionChangedBy")
   attachmentAccesses    IncidentAttachmentAccessHistory[]
   attachmentReviews     IncidentAttachmentSecurityReview[]
+  authoredNewsArticles  NewsArticle[]                      @relation("NewsArticleAuthor")
+  newsStatusChanges     NewsArticleStatusHistory[]         @relation("NewsArticleStatusActor")
   sessions              StaffSession[]
 
   @@index([role, status])
   @@map("staff_users")
+}
+
+model NewsArticle {
+  id                   String            @id @default(uuid()) @db.Uuid
+  slug                 String            @unique @db.VarChar(100)
+  status               NewsArticleStatus @default(DRAFT)
+  authorId             String            @map("author_id") @db.Uuid
+  titleHa              String            @map("title_ha") @db.VarChar(180)
+  summaryHa            String            @map("summary_ha") @db.VarChar(500)
+  bodyHa               String            @map("body_ha") @db.Text
+  titleEn              String?           @map("title_en") @db.VarChar(180)
+  summaryEn            String?           @map("summary_en") @db.VarChar(500)
+  bodyEn               String?           @map("body_en") @db.Text
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  submittedForReviewAt DateTime?         @map("submitted_for_review_at") @db.Timestamptz(3)
+  publishedAt          DateTime?         @map("published_at") @db.Timestamptz(3)
+  archivedAt           DateTime?         @map("archived_at") @db.Timestamptz(3)
+
+  author        User                       @relation("NewsArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  statusHistory NewsArticleStatusHistory[]
+
+  @@index([status, updatedAt])
+  @@index([authorId, updatedAt])
+  @@index([createdAt])
+  @@index([publishedAt])
+  @@map("news_articles")
+}
+
+model NewsArticleStatusHistory {
+  id         String             @id @default(uuid()) @db.Uuid
+  articleId  String             @map("article_id") @db.Uuid
+  fromStatus NewsArticleStatus? @map("from_status")
+  toStatus   NewsArticleStatus  @map("to_status")
+  actorId    String             @map("actor_id") @db.Uuid
+  reason     String?            @db.VarChar(1000)
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  article NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  actor   User        @relation("NewsArticleStatusActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([articleId, createdAt])
+  @@index([actorId, createdAt])
+  @@map("news_article_status_history")
 }
 
 model StaffSession {
@@ -145,10 +198,10 @@ model Incident {
   updatedAt             DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
   closedAt              DateTime?          @map("closed_at") @db.Timestamptz(3)
 
-  category                IncidentCategory                  @relation(fields: [categoryId], references: [id])
-  assignedToUser          User?                             @relation("IncidentAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
-  duplicateOfIncident     Incident?                         @relation("IncidentDuplicates", fields: [duplicateOfIncidentId], references: [id], onDelete: SetNull)
-  duplicates              Incident[]                        @relation("IncidentDuplicates")
+  category                IncidentCategory                   @relation(fields: [categoryId], references: [id])
+  assignedToUser          User?                              @relation("IncidentAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  duplicateOfIncident     Incident?                          @relation("IncidentDuplicates", fields: [duplicateOfIncidentId], references: [id], onDelete: SetNull)
+  duplicates              Incident[]                         @relation("IncidentDuplicates")
   contact                 IncidentContact?
   statusHistory           IncidentStatusHistory[]
   assignmentHistory       IncidentAssignmentHistory[]

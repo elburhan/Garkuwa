@@ -407,6 +407,43 @@ bulk review, bulk download, attachment deletion UI, messaging, or notification. 
 retention and deletion rules require institutional/legal approval; no retention period is
 invented. This is not a production-readiness claim.
 
+## Internal news editorial foundation
+
+The verified-information side now has an authenticated, internal-only editorial workflow. Admin
+routes are `/admin/news`, `/admin/news/new`, and `/admin/news/:articleId`. The API endpoints are:
+
+- `GET /api/admin/news`
+- `POST /api/admin/news`
+- `GET /api/admin/news/:articleId`
+- `PATCH /api/admin/news/:articleId`
+- `PATCH /api/admin/news/:articleId/status`
+- `GET /api/admin/news/:articleId/history`
+
+`SUPER_ADMIN`, `ADMIN`, `EDITOR`, and `MODERATOR` may read the article list and details;
+`ANALYST` is denied. Administrators and editors may create drafts. Editors may edit and submit only
+their own drafts. Moderators may return an in-review article for correction, while only
+administrators may approve publication or archive an approved article.
+
+The lifecycle is `DRAFT → IN_REVIEW → PUBLISHED → ARCHIVED`, with the controlled return
+`IN_REVIEW → DRAFT`. Returning requires a review reason. All other transitions are rejected, and
+archived records are terminal. Every mutation requires the caller's `expectedUpdatedAt`; stale
+mutations return `409 Conflict`. Status changes and immutable history entries are committed in one
+transaction.
+
+Hausa title, summary, and plain-text body are required and canonical. English is optional, but its
+title, summary, and body must be supplied together. Slugs are generated once from the Hausa title,
+transliterating Hausa Latin letters and adding a bounded numeric suffix for collisions. Slugs stay
+stable when draft titles change.
+
+`PUBLISHED` currently means editorially approved for future public delivery. No public news route,
+RSS feed, sitemap entry, public cache, or homepage news card exists yet. This foundation also has no
+rich-text/HTML storage, Markdown rendering, cover-image upload, scheduled publication, article
+deletion, autosave, analytics, notification, or AI writing/translation feature.
+
+Editorial mutations use the existing trusted-origin protection and a per-instance in-memory limit
+of 60 attempts per staff user per 15 minutes. A shared limiter store would be required for multiple
+API replicas. This internal foundation is not a claim of production readiness.
+
 ## Environment variables
 
 Create `.env` only at the repository root. Next.js and Prisma resolve that file from their
@@ -491,7 +528,7 @@ submission, secure staff authentication, controlled incident workflow, and restr
 contact access and internal staff notes described above. It intentionally does **not** implement
 public tracking, reporter accounts, bulk contact reveal, contact export, arbitrary incident editing or
 deletion, media uploads, device-location
-access, maps, production category management, news or editorial workflows, dashboards, analytics,
+access, maps, production category management, public news delivery, editorial analytics,
 object storage, notifications, Redis, queues, outbox events, audit-log business logic, Kubernetes,
 microservices, or Kafka. The platform remains an incremental foundation and is not a claim of
 production readiness.

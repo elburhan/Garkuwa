@@ -1600,6 +1600,36 @@ h3 {
   }
 }
 
+.admin-news-form,
+.admin-news-workflow {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.admin-news-form fieldset,
+.admin-news-workflow fieldset {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+}
+
+.admin-news-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.admin-news-field textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.plain-text-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 @media (min-width: 64rem) {
   .desktop-navigation {
     display: block;

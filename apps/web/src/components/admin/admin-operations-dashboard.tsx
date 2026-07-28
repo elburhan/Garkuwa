@@ -136,6 +136,11 @@ export function AdminOperationsDashboard({
         <Link className="button button-primary" href={`/admin/incidents?lang=${locale}`}>
           {dashboardMessages.goToQueue}
         </Link>
+        {principal.role !== 'ANALYST' ? (
+          <Link className="button button-secondary" href={`/admin/news?lang=${locale}`}>
+            {messages.news.management}
+          </Link>
+        ) : null}
         <AdminLogoutButton locale={locale} apiBaseUrl={apiBaseUrl} />
       </div>
 
