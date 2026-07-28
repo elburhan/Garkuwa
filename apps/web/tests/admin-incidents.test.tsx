@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -172,7 +172,9 @@ describe('read-only admin incident web interface', () => {
     expect(screen.getByText('A reason is required for this transition.')).toBeTruthy();
     expect(globalThis.fetch).not.toHaveBeenCalled();
 
-    await user.type(screen.getByLabelText('Transition reason'), 'Reviewed evidence');
+    fireEvent.change(screen.getByLabelText('Transition reason'), {
+      target: { value: 'Reviewed evidence' },
+    });
     await user.click(screen.getByLabelText('I confirm that this incident should be rejected.'));
     await user.click(screen.getByRole('button', { name: 'Change status' }));
     expect(await screen.findByText(/changed elsewhere/i)).toBeTruthy();
