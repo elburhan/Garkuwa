@@ -5,8 +5,9 @@ import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { IncidentsModule } from './modules/incidents/incidents.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
+import { NewsModule } from './modules/news/news.module.js';
 
 @Module({
-  imports: [DatabaseModule, HealthModule, AuthModule, IncidentsModule, DashboardModule],
+  imports: [DatabaseModule, HealthModule, AuthModule, IncidentsModule, DashboardModule, NewsModule],
 })
 export class AppModule {}
