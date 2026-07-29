@@ -6,6 +6,14 @@ import { NewsArticleStatus } from '../../../generated/prisma/enums.js';
 import type { PublicNewsLanguage, PublicNewsQuery } from './dto/public-news.dto.js';
 
 export const PUBLIC_NEWS_CLOCK = Symbol('PUBLIC_NEWS_CLOCK');
+const advisoryPublicSelect = {
+  severity: true,
+  affectedAreaHa: true,
+  affectedAreaEn: true,
+  recommendedActionsHa: true,
+  recommendedActionsEn: true,
+  referencesJson: true,
+} as const;
 
 const completeEnglishTranslation: Prisma.NewsArticleWhereInput = {
   AND: [
@@ -22,11 +30,22 @@ function visibilityWhere(
   language: PublicNewsLanguage,
   now: Date,
   categorySlug?: string,
+  severity?: PublicNewsQuery['severity'],
 ): Prisma.NewsArticleWhereInput {
   return {
     status: NewsArticleStatus.PUBLISHED,
     publishedAt: { not: null, lte: now },
     category: { isActive: true, ...(categorySlug ? { slug: categorySlug } : {}) },
+    ...(severity ? { securityAdvisory: { severity } } : {}),
+    ...(language === 'en' && categorySlug === 'security-advisories'
+      ? {
+          securityAdvisory: {
+            ...(severity ? { severity } : {}),
+            affectedAreaEn: { not: null },
+            recommendedActionsEn: { not: null },
+          },
+        }
+      : {}),
     ...(language === 'en' ? completeEnglishTranslation : {}),
   };
 }
@@ -44,7 +63,7 @@ export class PublicNewsService {
 
   async list(query: PublicNewsQuery) {
     const generatedAt = new Date(this.clock());
-    const where = visibilityWhere(query.lang, generatedAt, query.category);
+    const where = visibilityWhere(query.lang, generatedAt, query.category, query.severity);
     const category = { select: { slug: true, nameHa: true, nameEn: true } } as const;
     const select =
       query.lang === 'en'
@@ -54,6 +73,7 @@ export class PublicNewsService {
             summaryEn: true,
             publishedAt: true,
             category,
+            securityAdvisory: { select: { severity: true } },
           }
         : {
             slug: true,
@@ -64,6 +84,7 @@ export class PublicNewsService {
             summaryEn: true,
             bodyEn: true,
             category,
+            securityAdvisory: { select: { severity: true } },
           };
     const [totalItems, articles] = await this.prisma.$transaction([
       this.prisma.newsArticle.count({ where }),
@@ -85,6 +106,9 @@ export class PublicNewsService {
             publishedAt: article.publishedAt!.toISOString(),
             hasEnglishTranslation: true,
             category: { slug: article.category.slug, name: article.category.nameEn },
+            securityAdvisory: article.securityAdvisory
+              ? { severity: article.securityAdvisory.severity }
+              : null,
           }
         : {
             slug: article.slug,
@@ -93,6 +117,9 @@ export class PublicNewsService {
             publishedAt: article.publishedAt!.toISOString(),
             hasEnglishTranslation: Boolean(article.titleEn && article.summaryEn && article.bodyEn),
             category: { slug: article.category.slug, name: article.category.nameHa },
+            securityAdvisory: article.securityAdvisory
+              ? { severity: article.securityAdvisory.severity }
+              : null,
           },
     );
 
@@ -123,6 +150,7 @@ export class PublicNewsService {
           bodyEn: true,
           publishedAt: true,
           category: { select: { slug: true, nameEn: true } },
+          securityAdvisory: { select: advisoryPublicSelect },
         },
       });
       if (!article?.publishedAt) throw publicNotFound();
@@ -134,6 +162,14 @@ export class PublicNewsService {
         publishedAt: article.publishedAt.toISOString(),
         hasEnglishTranslation: true,
         category: { slug: article.category.slug, name: article.category.nameEn },
+        securityAdvisory: article.securityAdvisory
+          ? {
+              severity: article.securityAdvisory.severity,
+              affectedArea: article.securityAdvisory.affectedAreaEn!,
+              recommendedActions: article.securityAdvisory.recommendedActionsEn!,
+              references: article.securityAdvisory.referencesJson,
+            }
+          : null,
       };
     }
 
@@ -149,6 +185,7 @@ export class PublicNewsService {
         summaryEn: true,
         bodyEn: true,
         category: { select: { slug: true, nameHa: true } },
+        securityAdvisory: { select: advisoryPublicSelect },
       },
     });
     if (!article?.publishedAt) throw publicNotFound();
@@ -160,6 +197,14 @@ export class PublicNewsService {
       publishedAt: article.publishedAt.toISOString(),
       hasEnglishTranslation: Boolean(article.titleEn && article.summaryEn && article.bodyEn),
       category: { slug: article.category.slug, name: article.category.nameHa },
+      securityAdvisory: article.securityAdvisory
+        ? {
+            severity: article.securityAdvisory.severity,
+            affectedArea: article.securityAdvisory.affectedAreaHa,
+            recommendedActions: article.securityAdvisory.recommendedActionsHa,
+            references: article.securityAdvisory.referencesJson,
+          }
+        : null,
     };
   }
 }

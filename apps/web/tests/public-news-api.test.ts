@@ -20,6 +20,7 @@ const item = {
   publishedAt: '2026-07-29T10:00:00.000Z',
   hasEnglishTranslation: true,
   category: { slug: 'news', name: 'Labarai' },
+  securityAdvisory: null,
 };
 
 describe('public news API client', () => {

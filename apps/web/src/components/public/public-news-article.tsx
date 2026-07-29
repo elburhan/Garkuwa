@@ -61,6 +61,42 @@ export function PublicNewsArticle({
         ))}
       </div>
 
+      {article.securityAdvisory ? (
+        <aside className="content-narrow advisory-panel" aria-labelledby="public-advisory-title">
+          <p
+            className={`advisory-severity severity-${article.securityAdvisory.severity.toLowerCase()}`}
+          >
+            {copy.severityLabels[article.securityAdvisory.severity]}
+          </p>
+          <h2 id="public-advisory-title">{copy.securityAdvisories}</h2>
+          <h3>{copy.affectedArea}</h3>
+          <div className="plain-text-content">{article.securityAdvisory.affectedArea}</div>
+          <h3>{copy.recommendedActions}</h3>
+          <div className="plain-text-content">{article.securityAdvisory.recommendedActions}</div>
+          {article.securityAdvisory.references.length > 0 ? (
+            <>
+              <h3>{copy.externalReferences}</h3>
+              <p className="external-link-notice">{copy.externalLinkNotice}</p>
+              <ul>
+                {article.securityAdvisory.references.map((reference) => (
+                  <li key={reference.url}>
+                    <a
+                      href={reference.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      referrerPolicy="no-referrer"
+                    >
+                      {reference.label}
+                      <span className="visually-hidden"> ({copy.externalLinkNotice})</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </aside>
+      ) : null}
+
       <p>
         <Link className="text-link" href={getPublicPath(locale, 'news')}>
           {copy.backToNews}

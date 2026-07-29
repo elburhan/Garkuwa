@@ -23,6 +23,23 @@ export function createPublicNewsListMetadata(locale: Locale): Metadata {
   };
 }
 
+export function createSecurityAdvisoryListMetadata(locale: Locale): Metadata {
+  const messages = getMessages(locale);
+  const copy = messages.publicNews;
+  const localizedPath = getPublicPath(locale, 'securityNews');
+  return {
+    title: `${copy.securityAdvisories} | ${messages.common.siteName}`,
+    description: copy.securityAdvisoriesIntroduction,
+    alternates: {
+      canonical: absoluteUrl(localizedPath),
+      languages: {
+        ha: absoluteUrl(getPublicPath('ha', 'securityNews')),
+        en: absoluteUrl(getPublicPath('en', 'securityNews')),
+      },
+    },
+  };
+}
+
 export function createPublicNewsArticleMetadata(
   locale: Locale,
   article: PublicNewsDetail,

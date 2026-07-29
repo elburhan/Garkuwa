@@ -34,6 +34,7 @@ describe('web localization foundation', () => {
       home: { ha: '/', en: '/en' },
       news: { ha: '/news', en: '/en/news' },
       liveNews: { ha: '/news/live', en: '/en/news/live' },
+      securityNews: { ha: '/news/security', en: '/en/news/security' },
       faq: { ha: '/faq', en: '/en/faq' },
       help: { ha: '/taimako', en: '/en/help' },
       about: { ha: '/game-da-mu', en: '/en/about' },

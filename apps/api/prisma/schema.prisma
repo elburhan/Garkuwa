@@ -66,6 +66,14 @@ enum NewsArticleStatus {
   ARCHIVED
 }
 
+enum SecurityAdvisorySeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFORMATIONAL
+}
+
 model User {
   id                  String     @id @default(uuid()) @db.Uuid
   /// Must be stored in normalized lowercase form by the future identity service.
@@ -140,6 +148,7 @@ model NewsArticle {
   author        User                       @relation("NewsArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict)
   category      NewsCategory               @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   statusHistory NewsArticleStatusHistory[]
+  securityAdvisory NewsSecurityAdvisory?
 
   @@index([status, updatedAt])
   @@index([authorId, updatedAt])
@@ -148,6 +157,24 @@ model NewsArticle {
   @@index([createdAt])
   @@index([publishedAt])
   @@map("news_articles")
+}
+
+model NewsSecurityAdvisory {
+  id                   String                   @id @default(uuid()) @db.Uuid
+  articleId            String                   @unique @map("article_id") @db.Uuid
+  severity             SecurityAdvisorySeverity
+  affectedAreaHa       String                   @map("affected_area_ha") @db.Text
+  affectedAreaEn       String?                  @map("affected_area_en") @db.Text
+  recommendedActionsHa String                   @map("recommended_actions_ha") @db.Text
+  recommendedActionsEn String?                  @map("recommended_actions_en") @db.Text
+  referencesJson       Json                     @default("[]") @map("references_json")
+  createdAt            DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  article NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([severity])
+  @@map("news_security_advisories")
 }
 
 model NewsArticleStatusHistory {

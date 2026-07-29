@@ -46,12 +46,12 @@ async function mutate(
   }
 }
 
-export const createNewsArticle = (content: Record<string, string | null>) =>
+export const createNewsArticle = (content: Record<string, unknown>) =>
   mutate('admin/news', 'POST', content);
 
 export const updateNewsArticle = (
   articleId: string,
-  content: Record<string, string | null>,
+  content: Record<string, unknown>,
   expectedUpdatedAt: string,
 ) => mutate(`admin/news/${articleId}`, 'PATCH', { ...content, expectedUpdatedAt });
 

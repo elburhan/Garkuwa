@@ -22,9 +22,76 @@ export const newsCategoryCodes = [
   'NEWS',
 ] as const;
 export const newsCategoryCodeSchema = z.enum(newsCategoryCodes);
+export const securityAdvisorySeverities = [
+  'CRITICAL',
+  'HIGH',
+  'MEDIUM',
+  'LOW',
+  'INFORMATIONAL',
+] as const;
+export const securityAdvisorySeveritySchema = z.enum(securityAdvisorySeverities);
+
+const advisoryReferenceSchema = z
+  .object({
+    label: requiredText(2, 160),
+    url: z
+      .string()
+      .trim()
+      .max(2000)
+      .superRefine((value, context) => {
+        try {
+          const url = new URL(value);
+          if (url.protocol !== 'https:' || url.username || url.password) {
+            context.addIssue({ code: 'custom', message: 'Reference URLs must use HTTPS.' });
+          }
+        } catch {
+          context.addIssue({ code: 'custom', message: 'Reference URL is invalid.' });
+        }
+      }),
+  })
+  .strict();
+
+const securityAdvisorySchema = z
+  .object({
+    severity: securityAdvisorySeveritySchema,
+    affectedAreaHa: requiredText(20, 1000),
+    affectedAreaEn: optionalTranslation(20, 1000),
+    recommendedActionsHa: requiredText(30, 3000),
+    recommendedActionsEn: optionalTranslation(30, 3000),
+    references: z.array(advisoryReferenceSchema).max(10).default([]),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (Boolean(value.affectedAreaEn) !== Boolean(value.recommendedActionsEn)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['affectedAreaEn'],
+        message: 'English affected area and recommended actions must be supplied together.',
+      });
+    }
+    const normalized = new Set<string>();
+    value.references.forEach((reference, index) => {
+      try {
+        const url = new URL(reference.url);
+        url.hash = '';
+        const key = url.href.toLowerCase();
+        if (normalized.has(key)) {
+          context.addIssue({
+            code: 'custom',
+            path: ['references', index, 'url'],
+            message: 'Duplicate reference URLs are not allowed.',
+          });
+        }
+        normalized.add(key);
+      } catch {
+        // The URL field reports the format error.
+      }
+    });
+  });
 
 const bilingualContentShape = {
   categoryCode: newsCategoryCodeSchema,
+  securityAdvisory: securityAdvisorySchema.nullable().optional().default(null),
   titleHa: requiredText(5, 180),
   summaryHa: requiredText(10, 500),
   bodyHa: requiredText(20, 50_000),
@@ -82,12 +149,52 @@ function enforceCategoryContentLimits(
   }
 }
 
+function enforceSecurityAdvisoryRules(
+  value: {
+    categoryCode: z.infer<typeof newsCategoryCodeSchema>;
+    titleEn: string | null;
+    summaryEn: string | null;
+    bodyEn: string | null;
+    securityAdvisory?: z.infer<typeof securityAdvisorySchema> | null;
+  },
+  context: z.RefinementCtx,
+): void {
+  if (value.categoryCode === 'SECURITY_ADVISORIES') {
+    if (!value.securityAdvisory) {
+      context.addIssue({
+        code: 'custom',
+        path: ['securityAdvisory'],
+        message: 'Structured security advisory fields are required.',
+      });
+      return;
+    }
+    const articleHasEnglish = Boolean(value.titleEn && value.summaryEn && value.bodyEn);
+    const advisoryHasEnglish = Boolean(
+      value.securityAdvisory.affectedAreaEn && value.securityAdvisory.recommendedActionsEn,
+    );
+    if (articleHasEnglish !== advisoryHasEnglish) {
+      context.addIssue({
+        code: 'custom',
+        path: ['securityAdvisory', 'affectedAreaEn'],
+        message: 'English article and advisory content must be complete together.',
+      });
+    }
+  } else if (value.securityAdvisory) {
+    context.addIssue({
+      code: 'custom',
+      path: ['securityAdvisory'],
+      message: 'Security advisory fields are only valid for security advisories.',
+    });
+  }
+}
+
 export const createNewsArticleSchema = z
   .object(bilingualContentShape)
   .strict()
   .superRefine((value, context) => {
     requireCompleteEnglishTranslation(value, context);
     enforceCategoryContentLimits(value, context);
+    enforceSecurityAdvisoryRules(value, context);
   });
 
 export const updateNewsArticleSchema = z
@@ -99,6 +206,7 @@ export const updateNewsArticleSchema = z
   .superRefine((value, context) => {
     requireCompleteEnglishTranslation(value, context);
     enforceCategoryContentLimits(value, context);
+    enforceSecurityAdvisoryRules(value, context);
   });
 
 export const newsArticleDecisionSchema = z
@@ -131,8 +239,18 @@ export const listNewsArticlesQuerySchema = z
     status: z.enum(NewsArticleStatus).optional(),
     authorId: z.uuid().optional(),
     category: newsCategoryCodeSchema.optional(),
+    severity: securityAdvisorySeveritySchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (value.severity && value.category !== 'SECURITY_ADVISORIES') {
+      context.addIssue({
+        code: 'custom',
+        path: ['severity'],
+        message: 'Severity requires the security advisory category.',
+      });
+    }
+  });
 
 export const newsArticleIdSchema = z.object({ articleId: z.uuid() }).strict();
 

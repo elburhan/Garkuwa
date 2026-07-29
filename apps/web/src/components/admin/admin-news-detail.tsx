@@ -85,6 +85,54 @@ export function AdminNewsDetail({
               <div className="plain-text-content">{article.bodyEn}</div>
             </section>
           ) : null}
+          {article.securityAdvisory ? (
+            <section className="admin-detail-card advisory-panel" aria-labelledby="advisory-title">
+              <p
+                className={`advisory-severity severity-${article.securityAdvisory.severity.toLowerCase()}`}
+              >
+                {messages.severityLabels[article.securityAdvisory.severity]}
+              </p>
+              <h2 id="advisory-title">{messages.securityAdvisoryDetails}</h2>
+              <h3>{messages.affectedAreaHa}</h3>
+              <div className="plain-text-content">{article.securityAdvisory.affectedAreaHa}</div>
+              <h3>{messages.recommendedActionsHa}</h3>
+              <div className="plain-text-content">
+                {article.securityAdvisory.recommendedActionsHa}
+              </div>
+              {article.securityAdvisory.affectedAreaEn &&
+              article.securityAdvisory.recommendedActionsEn ? (
+                <div lang="en">
+                  <h3>{messages.affectedAreaEn}</h3>
+                  <div className="plain-text-content">
+                    {article.securityAdvisory.affectedAreaEn}
+                  </div>
+                  <h3>{messages.recommendedActionsEn}</h3>
+                  <div className="plain-text-content">
+                    {article.securityAdvisory.recommendedActionsEn}
+                  </div>
+                </div>
+              ) : null}
+              {article.securityAdvisory.referencesJson.length > 0 ? (
+                <>
+                  <h3>{messages.references}</h3>
+                  <ul>
+                    {article.securityAdvisory.referencesJson.map((reference) => (
+                      <li key={reference.url}>
+                        <a
+                          href={reference.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          referrerPolicy="no-referrer"
+                        >
+                          {reference.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+            </section>
+          ) : null}
         </>
       )}
       <section className="admin-detail-card" aria-labelledby="workflow-title">

@@ -15,13 +15,38 @@ export const newsCategoryCodes = [
   'NEWS',
 ] as const;
 export type NewsCategoryCode = (typeof newsCategoryCodes)[number];
+export const securityAdvisorySeverities = [
+  'CRITICAL',
+  'HIGH',
+  'MEDIUM',
+  'LOW',
+  'INFORMATIONAL',
+] as const;
+export type SecurityAdvisorySeverity = (typeof securityAdvisorySeverities)[number];
 
 const authorSchema = z.object({ id: z.string(), displayName: z.string() });
+const httpsUrlSchema = z.url().refine((value) => {
+  const url = new URL(value);
+  return url.protocol === 'https:' && !url.username && !url.password;
+});
 const categorySchema = z.object({
   code: z.enum(newsCategoryCodes),
   slug: z.string(),
   nameHa: z.string(),
   nameEn: z.string(),
+});
+const securityAdvisorySchema = z.object({
+  severity: z.enum(securityAdvisorySeverities),
+  affectedAreaHa: z.string(),
+  affectedAreaEn: z.string().nullable(),
+  recommendedActionsHa: z.string(),
+  recommendedActionsEn: z.string().nullable(),
+  referencesJson: z.array(
+    z.object({
+      label: z.string(),
+      url: httpsUrlSchema,
+    }),
+  ),
 });
 const listItemSchema = z.object({
   id: z.string(),
@@ -33,6 +58,7 @@ const listItemSchema = z.object({
   updatedAt: z.string(),
   author: authorSchema,
   category: categorySchema,
+  securityAdvisory: z.object({ severity: z.enum(securityAdvisorySeverities) }).nullable(),
 });
 const articleSchema = listItemSchema.extend({
   summaryHa: z.string(),
@@ -42,6 +68,7 @@ const articleSchema = listItemSchema.extend({
   submittedForReviewAt: z.string().nullable(),
   publishedAt: z.string().nullable(),
   archivedAt: z.string().nullable(),
+  securityAdvisory: securityAdvisorySchema.nullable(),
 });
 const listSchema = z.object({
   items: z.array(listItemSchema),
@@ -130,10 +157,11 @@ export function buildNewsPath(
     status: first(parameters.status),
     lang: first(parameters.lang),
     category: first(parameters.category),
+    severity: first(parameters.severity),
   };
   for (const [key, value] of Object.entries(changes)) values[key] = value?.toString();
   const query = new URLSearchParams();
-  for (const key of ['page', 'status', 'category', 'lang']) {
+  for (const key of ['page', 'status', 'category', 'severity', 'lang']) {
     if (values[key]) query.set(key, values[key]!);
   }
   const suffix = query.toString();
@@ -145,9 +173,11 @@ export async function loadNewsArticles(parameters: AdminNewsSearchParams) {
   const page = first(parameters.page);
   const status = first(parameters.status);
   const category = first(parameters.category);
+  const severity = first(parameters.severity);
   if (page) query.set('page', page);
   if (status) query.set('status', status);
   if (category) query.set('category', category);
+  if (severity) query.set('severity', severity);
   return serverGet(`admin/news?${query}`, listSchema);
 }
 
