@@ -1,10 +1,15 @@
 import Link from 'next/link';
 
 import { getMessages, getPublicPath, type Locale } from '@/i18n';
+import type { PublicNewsItem } from '@/lib/public-news-api';
 
 import { FeatureStatusCard } from './feature-status-card';
+import { RecentPublicNews } from './recent-public-news';
 
-export function PublicHome({ locale }: Readonly<{ locale: Locale }>) {
+export function PublicHome({
+  locale,
+  recentNews = [],
+}: Readonly<{ locale: Locale; recentNews?: readonly PublicNewsItem[] }>) {
   const messages = getMessages(locale);
   const home = messages.homepage;
   const supportingLinks = [
@@ -57,6 +62,8 @@ export function PublicHome({ locale }: Readonly<{ locale: Locale }>) {
         </div>
       </section>
 
+      <RecentPublicNews items={recentNews} locale={locale} />
+
       <section className="section-spacing" aria-labelledby="pillars-title">
         <div className="content-width">
           <div className="section-heading content-narrow">
@@ -72,7 +79,7 @@ export function PublicHome({ locale }: Readonly<{ locale: Locale }>) {
             <FeatureStatusCard
               title={home.reportingTitle}
               description={home.reportingDescription}
-              status={messages.featureStatus.comingSoon}
+              status={messages.featureStatus.available}
             />
           </div>
         </div>

@@ -10,6 +10,7 @@
   "navigation": {
     "label": "Primary navigation",
     "home": "Home",
+    "news": "News and updates",
     "faq": "Frequently asked questions",
     "help": "Help",
     "about": "About us",
@@ -21,13 +22,13 @@
   "homepage": {
     "eyebrow": "A Hausa-first public platform",
     "title": "Verified public information and confidential reporting",
-    "introduction": "The Garkuwa Platform is being developed to support verified news and public updates alongside a separate channel for confidential incident reporting. The reporting form is now available; news remains planned.",
+    "introduction": "The Garkuwa Platform provides verified news and public updates alongside a separate channel for confidential incident reporting.",
     "primaryAction": "Report an incident",
     "secondaryAction": "Read questions and answers",
-    "pillarsTitle": "Two planned public services",
+    "pillarsTitle": "Two public services",
     "pillarsIntroduction": "Information published for the public will remain separate from confidential reports reviewed by internal staff.",
     "newsTitle": "Verified news and updates",
-    "newsDescription": "Announcements, advisories, warnings and public updates will be published after following a verification process.",
+    "newsDescription": "Read announcements, advisories, warnings and public updates published after internal verification.",
     "reportingTitle": "Confidential incident reporting",
     "reportingDescription": "A dedicated form allows citizens to share incident information without creating an account.",
     "trustTitle": "How trust is being designed",
@@ -45,6 +46,30 @@
     "stepThreeDescription": "Internal staff will review information through the administration system and take an appropriate next step.",
     "linksTitle": "More information",
     "linksDescription": "Learn how the platform is planned, what to expect and where to find general help."
+  },
+  "publicNews": {
+    "eyebrow": "Public information",
+    "title": "Verified news and announcements",
+    "introduction": "Read public updates that have completed the Foundation's internal review process.",
+    "readArticle": "Read the full article",
+    "publishedOn": "Published on",
+    "backToNews": "Back to news and announcements",
+    "empty": "No published articles are available at present.",
+    "unavailable": "News is temporarily unavailable. Please try again later.",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "pageNumber": "Page {page}",
+    "paginationLabel": "News pages",
+    "languageLabel": "Article language",
+    "hausaVersion": "Hausa version",
+    "englishVersion": "English version",
+    "englishUnavailable": "An English translation is not available for this article.",
+    "recentTitle": "Recent public updates",
+    "recentIntroduction": "The latest verified news and announcements.",
+    "viewAll": "View all news",
+    "notice": "Published information is separate from confidential incident reports.",
+    "listMetadataTitle": "Verified news and announcements",
+    "listMetadataDescription": "Published public news, announcements, advisories and updates from Garkuwa Foundation."
   },
   "faq": {
     "eyebrow": "Essential information",
@@ -89,7 +114,7 @@
       },
       {
         "question": "Are the news and reporting services live?",
-        "answer": "The incident reporting form is now available. Verified news and public updates remain under development."
+        "answer": "The incident reporting form and the published-news section are available. New articles may take a short time to appear because public pages use bounded caching."
       }
     ]
   },
@@ -100,7 +125,7 @@
     "sections": [
       {
         "title": "Using the public site",
-        "body": "Use the primary navigation to return home or open the report form, questions, help, about and contact pages. Verified news remains under development."
+        "body": "Use the primary navigation to open published news, the report form, questions, help, about and contact pages."
       },
       {
         "title": "Changing language",
@@ -182,7 +207,7 @@
   "featureStatus": {
     "comingSoon": "Coming soon",
     "available": "Available",
-    "notActive": "The reporting form is available; verified news remains under development."
+    "notActive": "Verified public news and confidential incident reporting are available."
   },
   "metadata": {
     "homeTitle": "Garkuwa Platform",

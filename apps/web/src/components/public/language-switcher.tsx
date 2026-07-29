@@ -17,6 +17,19 @@ export function LanguageSwitcher({
   navigationLabel: string;
 }>) {
   const pathname = usePathname();
+  const isHausaNewsDetail = /^\/news\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(pathname);
+
+  // Translation availability is article-specific. The article page renders the
+  // complete switch; the global shell must not guess an English URL.
+  if (locale === 'ha' && isHausaNewsDetail) {
+    return (
+      <nav className="language-switcher" aria-label={navigationLabel}>
+        <span lang="ha" aria-current="page">
+          {haLabel}
+        </span>
+      </nav>
+    );
+  }
 
   return (
     <nav className="language-switcher" aria-label={navigationLabel}>

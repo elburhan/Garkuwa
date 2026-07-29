@@ -3,6 +3,7 @@ import type { Locale } from '@garkuwa/i18n';
 
 export const publicRoutePairs = {
   home: { ha: '/', en: '/en' },
+  news: { ha: '/news', en: '/en/news' },
   faq: { ha: '/faq', en: '/en/faq' },
   help: { ha: '/taimako', en: '/en/help' },
   about: { ha: '/game-da-mu', en: '/en/about' },
@@ -33,6 +34,12 @@ export function getEquivalentPublicPath(pathname: string, targetLocale: Locale):
   }
 
   const normalizedPath = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
+  const haNewsDetail = normalizedPath.match(/^\/news\/([a-z0-9]+(?:-[a-z0-9]+)*)$/);
+  const enNewsDetail = normalizedPath.match(/^\/en\/news\/([a-z0-9]+(?:-[a-z0-9]+)*)$/);
+  const newsSlug = haNewsDetail?.[1] ?? enNewsDetail?.[1];
+  if (newsSlug) {
+    return targetLocale === 'ha' ? `/news/${newsSlug}` : `/en/news/${newsSlug}`;
+  }
   const pair = Object.values(publicRoutePairs).find(
     ({ ha, en }) => ha === normalizedPath || en === normalizedPath,
   );

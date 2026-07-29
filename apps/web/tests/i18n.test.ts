@@ -32,6 +32,7 @@ describe('web localization foundation', () => {
   it('maps every static public page to its Hausa and English equivalent', () => {
     expect(publicRoutePairs).toEqual({
       home: { ha: '/', en: '/en' },
+      news: { ha: '/news', en: '/en/news' },
       faq: { ha: '/faq', en: '/en/faq' },
       help: { ha: '/taimako', en: '/en/help' },
       about: { ha: '/game-da-mu', en: '/en/about' },
@@ -64,6 +65,13 @@ describe('web localization foundation', () => {
     expect(getEquivalentPublicPath('/en/report-incident', 'ha')).toBe('/rahoton-lamari');
   });
 
+  it('maps public news lists and stable article slugs without creating /ha routes', () => {
+    expect(getPublicPath('ha', 'news')).toBe('/news');
+    expect(getPublicPath('en', 'news')).toBe('/en/news');
+    expect(getEquivalentPublicPath('/news/sanarwar-tsaro', 'en')).toBe('/en/news/sanarwar-tsaro');
+    expect(getEquivalentPublicPath('/en/news/sanarwar-tsaro', 'ha')).toBe('/news/sanarwar-tsaro');
+  });
+
   it('keeps /ha redirect separate and blocks nested /ha locale pages', () => {
     const legacyHaPage = readFileSync(resolve(process.cwd(), 'src/app/ha/page.tsx'), 'utf8');
     const localeLayout = readFileSync(
@@ -88,6 +96,7 @@ describe('web localization foundation', () => {
 
     expect([
       ha.navigation.home,
+      ha.navigation.news,
       ha.navigation.faq,
       ha.navigation.help,
       ha.navigation.about,
@@ -95,6 +104,7 @@ describe('web localization foundation', () => {
       ha.navigation.reportIncident,
     ]).toEqual([
       'Shafin farko',
+      'Labarai da sanarwa',
       'Tambayoyin da ake yawan yi',
       'Taimako',
       'Game da mu',
@@ -103,6 +113,7 @@ describe('web localization foundation', () => {
     ]);
     expect([
       en.navigation.home,
+      en.navigation.news,
       en.navigation.faq,
       en.navigation.help,
       en.navigation.about,
@@ -110,6 +121,7 @@ describe('web localization foundation', () => {
       en.navigation.reportIncident,
     ]).toEqual([
       'Home',
+      'News and updates',
       'Frequently asked questions',
       'Help',
       'About us',
