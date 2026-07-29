@@ -5,7 +5,11 @@ import { AdminNewsList } from '@/components/admin/admin-news-list';
 import type { Locale } from '@/i18n';
 import { getMessages } from '@/i18n';
 import { getAdminPrincipal } from '@/lib/admin-auth';
-import { loadNewsArticles, type AdminNewsSearchParams } from '@/lib/admin-news-api';
+import {
+  loadNewsArticles,
+  loadNewsCategories,
+  type AdminNewsSearchParams,
+} from '@/lib/admin-news-api';
 
 export const metadata: Metadata = { title: 'Gudanar da labarai | Gidauniyar Garkuwa' };
 const viewerRoles = new Set(['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'MODERATOR']);
@@ -27,9 +31,12 @@ export default async function AdminNewsPage({
       </main>
     );
   }
-  const result = await loadNewsArticles(parameters);
+  const [result, categoriesResult] = await Promise.all([
+    loadNewsArticles(parameters),
+    loadNewsCategories(),
+  ]);
   if (result.kind === 'unauthenticated') redirect(`/admin/login?lang=${locale}&reason=expired`);
-  if (result.kind !== 'success') {
+  if (result.kind !== 'success' || categoriesResult.kind !== 'success') {
     return (
       <main className="admin-content content-width section-spacing" lang={locale}>
         <h1>{getMessages(locale).admin.news.articles}</h1>
@@ -45,6 +52,7 @@ export default async function AdminNewsPage({
       principal={principal}
       news={result.data}
       parameters={parameters}
+      categories={categoriesResult.data.items}
     />
   );
 }

@@ -7,6 +7,7 @@ import {
   newsStatuses,
   type AdminNewsSearchParams,
   type NewsArticleList,
+  type NewsCategories,
 } from '@/lib/admin-news-api';
 
 const creatorRoles = new Set(['SUPER_ADMIN', 'ADMIN', 'EDITOR']);
@@ -16,11 +17,13 @@ export function AdminNewsList({
   principal,
   news,
   parameters,
+  categories,
 }: Readonly<{
   locale: Locale;
   principal: AdminPrincipal;
   news: NewsArticleList;
   parameters: AdminNewsSearchParams;
+  categories: NewsCategories['items'];
 }>) {
   const messages = getMessages(locale).admin.news;
   const dates = new Intl.DateTimeFormat(locale === 'ha' ? 'ha-NG' : 'en-NG', {
@@ -64,6 +67,19 @@ export function AdminNewsList({
             </option>
           ))}
         </select>
+        <label htmlFor="news-category-filter">{messages.filterCategory}</label>
+        <select
+          id="news-category-filter"
+          name="category"
+          defaultValue={String(parameters.category ?? '')}
+        >
+          <option value="">{messages.allCategories}</option>
+          {categories.map((category) => (
+            <option key={category.code} value={category.code}>
+              {locale === 'ha' ? category.nameHa : category.nameEn}
+            </option>
+          ))}
+        </select>
         <button className="button" type="submit">
           {messages.applyFilter}
         </button>
@@ -82,6 +98,7 @@ export function AdminNewsList({
               <tr>
                 <th scope="col">{messages.title}</th>
                 <th scope="col">{messages.statusLabel}</th>
+                <th scope="col">{messages.category}</th>
                 <th scope="col">{messages.author}</th>
                 <th scope="col">{messages.lastUpdated}</th>
                 <th scope="col">{messages.created}</th>
@@ -97,6 +114,7 @@ export function AdminNewsList({
                     {article.titleEn ? <small> · EN</small> : null}
                   </td>
                   <td>{messages.status[article.status]}</td>
+                  <td>{locale === 'ha' ? article.category.nameHa : article.category.nameEn}</td>
                   <td>{article.author.displayName}</td>
                   <td>{dates.format(new Date(article.updatedAt))}</td>
                   <td>{dates.format(new Date(article.createdAt))}</td>

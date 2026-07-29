@@ -3,12 +3,21 @@ import type { PipeTransform } from '@nestjs/common';
 import { z } from 'zod';
 
 export const publicNewsLanguageSchema = z.enum(['ha', 'en']);
+export const publicNewsCategorySlugs = [
+  'announcements',
+  'security-advisories',
+  'community-updates',
+  'foundation-activities',
+  'live-updates',
+  'news',
+] as const;
 
 export const publicNewsQuerySchema = z
   .object({
     lang: publicNewsLanguageSchema.default('ha'),
     page: z.coerce.number().int().positive().default(1),
     pageSize: z.coerce.number().int().positive().max(30).default(10),
+    category: z.enum(publicNewsCategorySlugs).optional(),
   })
   .strict();
 

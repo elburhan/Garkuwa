@@ -55,6 +55,7 @@ export function PublicNewsListPage({
             const href = `${getPublicPath(locale, 'news')}/${article.slug}`;
             return (
               <article className="public-news-card" key={article.slug}>
+                <p className="category-label">{article.category.name}</p>
                 <p className="publication-date">
                   {copy.publishedOn}{' '}
                   <time dateTime={article.publishedAt}>

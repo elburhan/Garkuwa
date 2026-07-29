@@ -15,6 +15,7 @@ import { NewsService } from '../src/modules/news/news.service.js';
 const articleId = '52fc7e20-ab06-4f7c-8d3c-15f075275fd3';
 const cookie = 'garkuwa_staff_session=fake-token';
 const content = {
+  categoryCode: 'NEWS',
   titleHa: 'Sanarwar Tsaro ta Gidauniyar Garkuwa',
   summaryHa: 'Wannan taƙaitaccen bayani ne na gwaji domin tabbatar da ingancin tsarin.',
   bodyHa: `Cikakken bayanin gwaji ne. ${'Bayani '.repeat(20)}`,
@@ -31,6 +32,18 @@ describe('admin news HTTP endpoints', () => {
     update: jest.fn(async () => ({ article: { id: articleId, status: 'DRAFT' } })),
     transition: jest.fn(async () => ({ article: { id: articleId, status: 'IN_REVIEW' } })),
     history: jest.fn(async () => ({ items: [] })),
+    categories: jest.fn(async () => ({
+      items: [
+        {
+          code: 'NEWS',
+          slug: 'news',
+          nameHa: 'Labarai',
+          nameEn: 'News',
+          displayOrder: 6,
+          isActive: true,
+        },
+      ],
+    })),
   };
 
   beforeAll(async () => {
@@ -68,9 +81,11 @@ describe('admin news HTTP endpoints', () => {
       .set('Content-Type', 'application/json');
 
   it('blocks unauthenticated and ANALYST access while allowing editorial readers', async () => {
+    await get('/categories').expect(401);
     await get('').expect(401);
     authenticateAs(StaffRole.ANALYST);
     await get('').expect(403);
+    await get('/categories').expect(403);
     for (const role of [
       StaffRole.EDITOR,
       StaffRole.MODERATOR,
@@ -80,6 +95,7 @@ describe('admin news HTTP endpoints', () => {
       authenticateAs(role);
       const response = await get('').expect(200);
       expect(response.headers['cache-control']).toBe('private, no-store');
+      await get('/categories').expect(200);
     }
   });
 

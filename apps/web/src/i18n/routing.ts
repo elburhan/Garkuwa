@@ -4,6 +4,7 @@ import type { Locale } from '@garkuwa/i18n';
 export const publicRoutePairs = {
   home: { ha: '/', en: '/en' },
   news: { ha: '/news', en: '/en/news' },
+  liveNews: { ha: '/news/live', en: '/en/news/live' },
   faq: { ha: '/faq', en: '/en/faq' },
   help: { ha: '/taimako', en: '/en/help' },
   about: { ha: '/game-da-mu', en: '/en/about' },

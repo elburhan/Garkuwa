@@ -5,7 +5,7 @@ import { AdminNewsDetail } from '@/components/admin/admin-news-detail';
 import type { Locale } from '@/i18n';
 import { getMessages } from '@/i18n';
 import { getAdminPrincipal } from '@/lib/admin-auth';
-import { loadNewsArticle, loadNewsHistory } from '@/lib/admin-news-api';
+import { loadNewsArticle, loadNewsCategories, loadNewsHistory } from '@/lib/admin-news-api';
 
 export const metadata: Metadata = { title: 'Rubutun edita | Gidauniyar Garkuwa' };
 const viewerRoles = new Set(['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'MODERATOR']);
@@ -29,14 +29,19 @@ export default async function NewsArticleDetailPage({
       </main>
     );
   }
-  const [articleResult, historyResult] = await Promise.all([
+  const [articleResult, historyResult, categoriesResult] = await Promise.all([
     loadNewsArticle(articleId),
     loadNewsHistory(articleId),
+    loadNewsCategories(),
   ]);
   if (articleResult.kind === 'unauthenticated')
     redirect(`/admin/login?lang=${locale}&reason=expired`);
   if (articleResult.kind === 'not-found') notFound();
-  if (articleResult.kind !== 'success' || historyResult.kind !== 'success') {
+  if (
+    articleResult.kind !== 'success' ||
+    historyResult.kind !== 'success' ||
+    categoriesResult.kind !== 'success'
+  ) {
     return (
       <main className="admin-content content-width section-spacing" lang={locale}>
         <h1>{getMessages(locale).admin.news.articles}</h1>
@@ -50,6 +55,7 @@ export default async function NewsArticleDetailPage({
       principal={principal}
       article={articleResult.data.article}
       history={historyResult.data.items}
+      categories={categoriesResult.data.items}
     />
   );
 }

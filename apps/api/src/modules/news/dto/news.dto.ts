@@ -13,13 +13,24 @@ const optionalTranslation = (minimum: number, maximum: number) =>
     .transform((value) => (typeof value === 'string' ? value.trim() || null : null))
     .pipe(z.string().min(minimum).max(maximum).nullable());
 
+export const newsCategoryCodes = [
+  'ANNOUNCEMENTS',
+  'SECURITY_ADVISORIES',
+  'COMMUNITY_UPDATES',
+  'FOUNDATION_ACTIVITIES',
+  'LIVE_UPDATES',
+  'NEWS',
+] as const;
+export const newsCategoryCodeSchema = z.enum(newsCategoryCodes);
+
 const bilingualContentShape = {
+  categoryCode: newsCategoryCodeSchema,
   titleHa: requiredText(5, 180),
-  summaryHa: requiredText(20, 500),
-  bodyHa: requiredText(100, 50_000),
+  summaryHa: requiredText(10, 500),
+  bodyHa: requiredText(20, 50_000),
   titleEn: optionalTranslation(5, 180),
-  summaryEn: optionalTranslation(20, 500),
-  bodyEn: optionalTranslation(100, 50_000),
+  summaryEn: optionalTranslation(10, 500),
+  bodyEn: optionalTranslation(20, 50_000),
 };
 
 function requireCompleteEnglishTranslation(
@@ -36,10 +47,48 @@ function requireCompleteEnglishTranslation(
   }
 }
 
+function enforceCategoryContentLimits(
+  value: {
+    categoryCode: z.infer<typeof newsCategoryCodeSchema>;
+    titleHa: string;
+    summaryHa: string;
+    bodyHa: string;
+    titleEn: string | null;
+    summaryEn: string | null;
+    bodyEn: string | null;
+  },
+  context: z.RefinementCtx,
+): void {
+  const limits =
+    value.categoryCode === 'LIVE_UPDATES'
+      ? { title: 140, summaryMin: 10, summaryMax: 280, bodyMin: 20, bodyMax: 1000 }
+      : { title: 180, summaryMin: 20, summaryMax: 500, bodyMin: 100, bodyMax: 50_000 };
+  const fields = [
+    ['titleHa', value.titleHa, 5, limits.title],
+    ['summaryHa', value.summaryHa, limits.summaryMin, limits.summaryMax],
+    ['bodyHa', value.bodyHa, limits.bodyMin, limits.bodyMax],
+    ['titleEn', value.titleEn, 5, limits.title],
+    ['summaryEn', value.summaryEn, limits.summaryMin, limits.summaryMax],
+    ['bodyEn', value.bodyEn, limits.bodyMin, limits.bodyMax],
+  ] as const;
+  for (const [path, text, minimum, maximum] of fields) {
+    if (text !== null && (text.length < minimum || text.length > maximum)) {
+      context.addIssue({
+        code: 'custom',
+        path: [path],
+        message: `Content must contain between ${minimum} and ${maximum} characters.`,
+      });
+    }
+  }
+}
+
 export const createNewsArticleSchema = z
   .object(bilingualContentShape)
   .strict()
-  .superRefine(requireCompleteEnglishTranslation);
+  .superRefine((value, context) => {
+    requireCompleteEnglishTranslation(value, context);
+    enforceCategoryContentLimits(value, context);
+  });
 
 export const updateNewsArticleSchema = z
   .object({
@@ -47,7 +96,10 @@ export const updateNewsArticleSchema = z
     expectedUpdatedAt: z.iso.datetime({ offset: true }),
   })
   .strict()
-  .superRefine(requireCompleteEnglishTranslation);
+  .superRefine((value, context) => {
+    requireCompleteEnglishTranslation(value, context);
+    enforceCategoryContentLimits(value, context);
+  });
 
 export const newsArticleDecisionSchema = z
   .object({
@@ -78,6 +130,7 @@ export const listNewsArticlesQuerySchema = z
     pageSize: z.coerce.number().int().positive().max(50).default(20),
     status: z.enum(NewsArticleStatus).optional(),
     authorId: z.uuid().optional(),
+    category: newsCategoryCodeSchema.optional(),
   })
   .strict();
 

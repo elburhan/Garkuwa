@@ -16,6 +16,7 @@ const actor: StaffPrincipal = {
   role: StaffRole.EDITOR,
 };
 const content = {
+  categoryCode: 'NEWS' as const,
   titleHa: 'Sanarwar Tsaro',
   summaryHa: 'Wannan taƙaitaccen bayanin gwaji ne na sashen edita.',
   bodyHa: `Cikakken rubutun gwaji ne. ${'Bayani '.repeat(20)}`,
@@ -30,6 +31,7 @@ describe('NewsService', () => {
   const updateMany = jest.fn<(input: unknown) => Promise<{ count: number }>>();
   const findUniqueOrThrow = jest.fn<(input: unknown) => Promise<unknown>>();
   const historyCreate = jest.fn<(input: unknown) => Promise<unknown>>();
+  const categoryFindFirst = jest.fn<(input: unknown) => Promise<unknown>>();
   const transactionClient = {
     newsArticle: { findUnique, updateMany, findUniqueOrThrow },
     newsArticleStatusHistory: { create: historyCreate },
@@ -37,16 +39,21 @@ describe('NewsService', () => {
   const transaction = jest.fn(async (callback: (client: typeof transactionClient) => unknown) =>
     callback(transactionClient),
   );
-  const prisma = { $transaction: transaction } as unknown as PrismaService;
+  const prisma = {
+    $transaction: transaction,
+    newsCategory: { findFirst: categoryFindFirst },
+  } as unknown as PrismaService;
   const service = new NewsService(prisma, () => changed.getTime());
 
   beforeEach(() => {
     jest.clearAllMocks();
+    categoryFindFirst.mockResolvedValue({ id: 'category-id' });
     findUnique.mockResolvedValue({
       id: articleId,
       authorId: actor.id,
       status: NewsArticleStatus.DRAFT,
       updatedAt: expected,
+      category: { isActive: true },
     });
     updateMany.mockResolvedValue({ count: 1 });
     findUniqueOrThrow.mockResolvedValue({
@@ -60,6 +67,7 @@ describe('NewsService', () => {
       publishedAt: null,
       archivedAt: null,
       author: { id: actor.id, displayName: actor.name },
+      category: { code: 'NEWS', slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
     });
     historyCreate.mockResolvedValue({
       id: 'history-id',
@@ -92,6 +100,7 @@ describe('NewsService', () => {
       authorId: 'other-author',
       status: NewsArticleStatus.DRAFT,
       updatedAt: expected,
+      category: { isActive: true },
     });
     await expect(service.update(articleId, content, actor)).rejects.toBeInstanceOf(
       ForbiddenException,
@@ -101,6 +110,7 @@ describe('NewsService', () => {
       authorId: actor.id,
       status: NewsArticleStatus.DRAFT,
       updatedAt: new Date(expected.getTime() + 1),
+      category: { isActive: true },
     });
     await expect(service.update(articleId, content, actor)).rejects.toBeInstanceOf(
       ConflictException,

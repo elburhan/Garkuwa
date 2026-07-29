@@ -472,10 +472,40 @@ the active cache interval to appear or disappear. Admin editorial responses rema
 header.
 
 Public pages render plain text with preserved paragraphs and localized publication dates. There
-are no author pages, public previews, search, categories, tags, comments, reactions, view
-counters, related-content recommendations, RSS, sitemap, social cards, cover images, scheduled
+are no author pages, public previews, search, generic category pages, tags, comments, reactions,
+view counters, related-content recommendations, RSS, sitemap, social cards, cover images, scheduled
 publication, analytics, or public mutations. This remains an incremental delivery slice, not a
 production-readiness claim.
+
+### Controlled news categories and Live Updates
+
+Every article has exactly one primary category from a controlled bilingual lookup:
+`ANNOUNCEMENTS`, `SECURITY_ADVISORIES`, `COMMUNITY_UPDATES`, `FOUNDATION_ACTIVITIES`,
+`LIVE_UPDATES`, or `NEWS`. `NEWS`/`Labarai` is the compatibility category used by the additive
+migration to backfill existing articles without inventing a narrower classification. Category
+codes and slugs are system-controlled; this release has no category create, rename, deactivate,
+delete, or management interface, no secondary categories, and no free-form tags.
+
+Editorial create and draft-edit requests require an active `categoryCode`. Category changes are
+allowed only while an article is `DRAFT`; existing ownership, review, approval, history, and
+optimistic-concurrency rules remain unchanged. Live Updates use the same article model and
+approval lifecycle, with shorter limits (title 140, summary 280, body 1,000 characters) and do
+not bypass editorial review. The authenticated read-only category endpoint is
+`GET /api/admin/news/categories`; the admin list accepts a controlled `category` code filter.
+
+The public list accepts an optional controlled slug, for example
+`GET /api/public/news?category=live-updates`. Public article responses include only the localized
+category name and public slug—never the category UUID or staff identity. Published visibility
+also requires an active category. Dedicated feeds are available at `/news/live` and
+`/en/news/live`; generic category routes remain deferred. The homepages request at most five Live
+Updates and omit the block when none qualify, while ordinary recent news excludes Live Updates
+to prevent duplication.
+
+Relative timestamps update locally once per minute and retain an accessible exact timestamp.
+Article data does not poll: there is no SSE, WebSocket, background refresh, or claim of technically
+real-time transport. The existing public cache policy applies, so approved Live Updates may take
+up to the active cache interval to appear. Priority, severity, story grouping, RSS, sitemap,
+notifications, rich text, images, scheduling, comments, and analytics remain deferred.
 
 ## Environment variables
 

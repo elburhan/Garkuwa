@@ -11,7 +11,7 @@ import { AdminNewsDetail } from '../src/components/admin/admin-news-detail';
 import { AdminNewsForm } from '../src/components/admin/admin-news-form';
 import { AdminNewsList } from '../src/components/admin/admin-news-list';
 import type { AdminPrincipal } from '../src/lib/admin-auth';
-import type { NewsArticle, NewsArticleList } from '../src/lib/admin-news-api';
+import type { NewsArticle, NewsArticleList, NewsCategories } from '../src/lib/admin-news-api';
 
 const refresh = vi.fn();
 const push = vi.fn();
@@ -42,7 +42,20 @@ const article: NewsArticle = {
   publishedAt: null,
   archivedAt: null,
   author: { id: 'author-id', displayName: 'Marubucin Gwaji' },
+  category: { code: 'NEWS', slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
 };
+const categories: NewsCategories['items'] = [
+  {
+    code: 'NEWS',
+    slug: 'news',
+    nameHa: 'Labarai',
+    nameEn: 'News',
+    descriptionHa: null,
+    descriptionEn: null,
+    displayOrder: 6,
+    isActive: true,
+  },
+];
 const list: NewsArticleList = {
   items: [article],
   pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
@@ -58,7 +71,13 @@ afterEach(() => {
 describe('admin news editorial foundation', () => {
   it('renders Hausa by default and English independently with language-preserving links', () => {
     const { rerender } = render(
-      <AdminNewsList locale="ha" principal={principal('EDITOR')} news={list} parameters={{}} />,
+      <AdminNewsList
+        locale="ha"
+        principal={principal('EDITOR')}
+        news={list}
+        parameters={{}}
+        categories={categories}
+      />,
     );
     expect(screen.getByRole('heading', { name: 'Rubuce-rubucen sashen edita' })).toBeTruthy();
     expect(screen.getAllByText('Daftari').length).toBeGreaterThan(0);
@@ -71,6 +90,7 @@ describe('admin news editorial foundation', () => {
         principal={principal('EDITOR')}
         news={list}
         parameters={{ lang: 'en' }}
+        categories={categories}
       />,
     );
     expect(screen.getByRole('heading', { name: 'Editorial articles' })).toBeTruthy();
@@ -81,7 +101,13 @@ describe('admin news editorial foundation', () => {
 
   it('keeps create and workflow controls role-aware', () => {
     const { rerender } = render(
-      <AdminNewsList locale="en" principal={principal('MODERATOR')} news={list} parameters={{}} />,
+      <AdminNewsList
+        locale="en"
+        principal={principal('MODERATOR')}
+        news={list}
+        parameters={{}}
+        categories={categories}
+      />,
     );
     expect(screen.queryByRole('link', { name: 'Create article' })).toBeNull();
     rerender(
@@ -90,6 +116,7 @@ describe('admin news editorial foundation', () => {
         principal={principal('EDITOR')}
         article={article}
         history={[]}
+        categories={categories}
       />,
     );
     expect(screen.getByRole('heading', { name: 'Edit draft' })).toBeTruthy();
@@ -101,6 +128,7 @@ describe('admin news editorial foundation', () => {
         principal={principal('EDITOR', 'other-editor')}
         article={article}
         history={[]}
+        categories={categories}
       />,
     );
     expect(screen.queryByRole('heading', { name: 'Edit draft' })).toBeNull();
@@ -110,7 +138,7 @@ describe('admin news editorial foundation', () => {
   it('preserves draft input after client or server validation errors', async () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 400 }));
-    render(<AdminNewsForm locale="en" />);
+    render(<AdminNewsForm locale="en" categories={categories} />);
     fireEvent.change(screen.getAllByLabelText('Title')[0]!, {
       target: { value: 'Valid Hausa title' },
     });
@@ -147,6 +175,7 @@ describe('admin news editorial foundation', () => {
             actor: { id: 'author-id', displayName: 'Marubucin Gwaji' },
           },
         ]}
+        categories={categories}
       />,
     );
     expect(screen.getByRole('button', { name: 'Return for correction' })).toBeTruthy();

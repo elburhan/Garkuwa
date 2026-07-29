@@ -6,8 +6,23 @@ import { webEnvironment } from './env';
 
 export const newsStatuses = ['DRAFT', 'IN_REVIEW', 'PUBLISHED', 'ARCHIVED'] as const;
 export type NewsStatus = (typeof newsStatuses)[number];
+export const newsCategoryCodes = [
+  'ANNOUNCEMENTS',
+  'SECURITY_ADVISORIES',
+  'COMMUNITY_UPDATES',
+  'FOUNDATION_ACTIVITIES',
+  'LIVE_UPDATES',
+  'NEWS',
+] as const;
+export type NewsCategoryCode = (typeof newsCategoryCodes)[number];
 
 const authorSchema = z.object({ id: z.string(), displayName: z.string() });
+const categorySchema = z.object({
+  code: z.enum(newsCategoryCodes),
+  slug: z.string(),
+  nameHa: z.string(),
+  nameEn: z.string(),
+});
 const listItemSchema = z.object({
   id: z.string(),
   slug: z.string(),
@@ -17,6 +32,7 @@ const listItemSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   author: authorSchema,
+  category: categorySchema,
 });
 const articleSchema = listItemSchema.extend({
   summaryHa: z.string(),
@@ -49,10 +65,21 @@ const historySchema = z.object({
     }),
   ),
 });
+const categoriesSchema = z.object({
+  items: z.array(
+    categorySchema.extend({
+      descriptionHa: z.string().nullable(),
+      descriptionEn: z.string().nullable(),
+      displayOrder: z.number(),
+      isActive: z.boolean(),
+    }),
+  ),
+});
 
 export type NewsArticleList = z.infer<typeof listSchema>;
 export type NewsArticle = z.infer<typeof articleSchema>;
 export type NewsHistory = z.infer<typeof historySchema>;
+export type NewsCategories = z.infer<typeof categoriesSchema>;
 export type AdminNewsSearchParams = Record<string, string | string[] | undefined>;
 export type NewsApiResult<T> =
   | { kind: 'success'; data: T }
@@ -102,10 +129,11 @@ export function buildNewsPath(
     page: first(parameters.page),
     status: first(parameters.status),
     lang: first(parameters.lang),
+    category: first(parameters.category),
   };
   for (const [key, value] of Object.entries(changes)) values[key] = value?.toString();
   const query = new URLSearchParams();
-  for (const key of ['page', 'status', 'lang']) {
+  for (const key of ['page', 'status', 'category', 'lang']) {
     if (values[key]) query.set(key, values[key]!);
   }
   const suffix = query.toString();
@@ -116,9 +144,15 @@ export async function loadNewsArticles(parameters: AdminNewsSearchParams) {
   const query = new URLSearchParams();
   const page = first(parameters.page);
   const status = first(parameters.status);
+  const category = first(parameters.category);
   if (page) query.set('page', page);
   if (status) query.set('status', status);
+  if (category) query.set('category', category);
   return serverGet(`admin/news?${query}`, listSchema);
+}
+
+export async function loadNewsCategories() {
+  return serverGet('admin/news/categories', categoriesSchema);
 }
 
 export async function loadNewsArticle(articleId: string) {

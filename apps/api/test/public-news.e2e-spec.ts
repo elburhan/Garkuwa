@@ -17,6 +17,7 @@ const publicArticle = {
   body: 'Sakin layi na farko.\n\nSakin layi na biyu.',
   publishedAt: '2026-07-29T10:00:00.000Z',
   hasEnglishTranslation: true,
+  category: { slug: 'news', name: 'Labarai' },
 };
 
 describe('public news HTTP endpoints', () => {
@@ -57,6 +58,14 @@ describe('public news HTTP endpoints', () => {
     await request(app.getHttpServer()).get('/api/public/news?pageSize=31').expect(400);
     await request(app.getHttpServer()).get('/api/public/news?page=-1').expect(400);
     await request(app.getHttpServer()).get('/api/public/news?unknown=true').expect(400);
+    await request(app.getHttpServer()).get('/api/public/news?category=live-updates').expect(200);
+    expect(service.list).toHaveBeenLastCalledWith({
+      lang: 'ha',
+      page: 1,
+      pageSize: 10,
+      category: 'live-updates',
+    });
+    await request(app.getHttpServer()).get('/api/public/news?category=unknown').expect(400);
   });
 
   it('returns strict localized detail without authentication or internal metadata', async () => {

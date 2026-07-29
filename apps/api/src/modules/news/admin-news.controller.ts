@@ -50,6 +50,12 @@ export class AdminNewsController {
     return this.news.list(query);
   }
 
+  @Get('categories')
+  @Header('Cache-Control', 'private, no-store')
+  categories() {
+    return this.news.categories();
+  }
+
   @Post()
   @Header('Cache-Control', 'private, no-store')
   @StaffRoles(...newsCreatorRoles)

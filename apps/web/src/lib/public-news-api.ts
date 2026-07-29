@@ -10,8 +10,10 @@ const publicNewsItemSchema = z.object({
   summary: z.string(),
   publishedAt: z.iso.datetime({ offset: true }),
   hasEnglishTranslation: z.boolean(),
+  category: z.object({ slug: z.string(), name: z.string() }),
 });
 const publicNewsListSchema = z.object({
+  generatedAt: z.iso.datetime({ offset: true }),
   items: z.array(publicNewsItemSchema),
   pagination: z.object({
     page: z.number().int().positive(),
@@ -63,13 +65,16 @@ async function publicNewsFetch<T>(
 
 export function loadPublicNews(
   locale: Locale,
-  options: { page?: number; pageSize?: number; fetcher?: typeof fetch } = {},
+  options: { page?: number; pageSize?: number; category?: string; fetcher?: typeof fetch } = {},
 ): Promise<PublicNewsResult<PublicNewsList>> {
   const query = new URLSearchParams({
     lang: locale,
     page: String(options.page ?? 1),
     pageSize: String(options.pageSize ?? 10),
   });
+  if (options.category) {
+    query.set('category', options.category);
+  }
   return publicNewsFetch(`public/news?${query}`, publicNewsListSchema, options.fetcher);
 }
 

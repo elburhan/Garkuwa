@@ -4,12 +4,20 @@ import { getMessages, getPublicPath, type Locale } from '@/i18n';
 import type { PublicNewsItem } from '@/lib/public-news-api';
 
 import { FeatureStatusCard } from './feature-status-card';
+import { HomepageLiveUpdates } from './homepage-live-updates';
 import { RecentPublicNews } from './recent-public-news';
 
 export function PublicHome({
   locale,
   recentNews = [],
-}: Readonly<{ locale: Locale; recentNews?: readonly PublicNewsItem[] }>) {
+  liveUpdates = [],
+  initialNow,
+}: Readonly<{
+  locale: Locale;
+  recentNews?: readonly PublicNewsItem[];
+  liveUpdates?: readonly PublicNewsItem[];
+  initialNow?: number;
+}>) {
   const messages = getMessages(locale);
   const home = messages.homepage;
   const supportingLinks = [
@@ -63,6 +71,7 @@ export function PublicHome({
       </section>
 
       <RecentPublicNews items={recentNews} locale={locale} />
+      <HomepageLiveUpdates locale={locale} items={liveUpdates} initialNow={initialNow} />
 
       <section className="section-spacing" aria-labelledby="pillars-title">
         <div className="content-width">
