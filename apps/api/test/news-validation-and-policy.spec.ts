@@ -87,6 +87,83 @@ describe('news validation and editorial policy', () => {
     ).toThrow();
   });
 
+  it('requires structured advisory data only for the security category', () => {
+    expect(() =>
+      createNewsArticleSchema.parse({ ...content, categoryCode: 'SECURITY_ADVISORIES' }),
+    ).toThrow();
+    const advisory = {
+      severity: 'HIGH' as const,
+      affectedAreaHa: 'Masu amfani da tsohon tsarin da abin ya shafa.',
+      recommendedActionsHa:
+        'A sabunta tsarin, a tabbatar da tushen saƙo, sannan a bi umarnin tsaro.',
+      affectedAreaEn: null,
+      recommendedActionsEn: null,
+      references: [{ label: 'Official security guidance', url: 'https://example.org/security' }],
+    };
+    const parsed = createNewsArticleSchema.parse({
+      ...content,
+      categoryCode: 'SECURITY_ADVISORIES',
+      securityAdvisory: advisory,
+    });
+    expect(parsed.securityAdvisory).toMatchObject({
+      severity: 'HIGH',
+      affectedAreaHa: advisory.affectedAreaHa,
+    });
+    expect(() =>
+      createNewsArticleSchema.parse({ ...content, securityAdvisory: advisory }),
+    ).toThrow();
+  });
+
+  it('rejects unsafe, credential-bearing, duplicate, and partial-English advisory references', () => {
+    const base = {
+      ...content,
+      categoryCode: 'SECURITY_ADVISORIES' as const,
+      securityAdvisory: {
+        severity: 'MEDIUM' as const,
+        affectedAreaHa: 'Bangaren sabis da wannan sanarwar take shafa.',
+        recommendedActionsHa:
+          'A bi matakan kariya da aka bayyana, sannan a tabbatar da adireshin shafin.',
+        affectedAreaEn: null,
+        recommendedActionsEn: null,
+        references: [{ label: 'Guidance', url: 'http://example.org/guidance' }],
+      },
+    };
+    expect(() => createNewsArticleSchema.parse(base)).toThrow();
+    expect(() =>
+      createNewsArticleSchema.parse({
+        ...base,
+        securityAdvisory: {
+          ...base.securityAdvisory,
+          references: [{ label: 'Guidance', url: 'https://user:secret@example.org/guidance' }],
+        },
+      }),
+    ).toThrow();
+    expect(() =>
+      createNewsArticleSchema.parse({
+        ...base,
+        securityAdvisory: {
+          ...base.securityAdvisory,
+          references: [
+            { label: 'One', url: 'https://example.org/guidance#first' },
+            { label: 'Two', url: 'https://example.org/guidance#second' },
+          ],
+        },
+      }),
+    ).toThrow();
+    expect(() =>
+      createNewsArticleSchema.parse({
+        ...base,
+        titleEn: 'English advisory title',
+        summaryEn: 'A complete English advisory summary for public review.',
+        bodyEn: `A complete English advisory body. ${'Content '.repeat(15)}`,
+        securityAdvisory: {
+          ...base.securityAdvisory,
+          references: [],
+        },
+      }),
+    ).toThrow();
+  });
+
   it('requires a bounded return reason and expected timestamp', () => {
     expect(() =>
       newsArticleDecisionSchema.parse({

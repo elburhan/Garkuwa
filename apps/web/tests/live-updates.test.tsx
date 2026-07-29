@@ -23,6 +23,7 @@ const news: PublicNewsList = {
       publishedAt,
       hasEnglishTranslation: true,
       category: { slug: 'live-updates', name: 'Sabuntawa na Kai Tsaye' },
+      securityAdvisory: null,
     },
   ],
   pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },

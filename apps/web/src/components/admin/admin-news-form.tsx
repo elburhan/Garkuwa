@@ -16,6 +16,14 @@ type Content = {
   summaryEn: string;
   bodyEn: string;
 };
+type AdvisoryDraft = {
+  severity: string;
+  affectedAreaHa: string;
+  affectedAreaEn: string;
+  recommendedActionsHa: string;
+  recommendedActionsEn: string;
+  references: { label: string; url: string }[];
+};
 const emptyContent: Content = {
   categoryCode: '',
   titleHa: '',
@@ -25,8 +33,16 @@ const emptyContent: Content = {
   summaryEn: '',
   bodyEn: '',
 };
+const emptyAdvisory: AdvisoryDraft = {
+  severity: '',
+  affectedAreaHa: '',
+  affectedAreaEn: '',
+  recommendedActionsHa: '',
+  recommendedActionsEn: '',
+  references: [],
+};
 
-function valid(content: Content): boolean {
+function valid(content: Content, advisory: AdvisoryDraft): boolean {
   const limits =
     content.categoryCode === 'LIVE_UPDATES'
       ? { title: 140, summaryMin: 10, summary: 280, bodyMin: 20, body: 1000 }
@@ -51,7 +67,17 @@ function valid(content: Content): boolean {
       content.summaryEn.trim().length <= limits.summary &&
       content.bodyEn.trim().length >= limits.bodyMin &&
       content.bodyEn.trim().length <= limits.body);
-  return hausa && english;
+  const advisoryValid =
+    content.categoryCode !== 'SECURITY_ADVISORIES' ||
+    (advisory.severity.length > 0 &&
+      advisory.affectedAreaHa.trim().length >= 20 &&
+      advisory.recommendedActionsHa.trim().length >= 30 &&
+      Boolean(advisory.affectedAreaEn.trim()) === Boolean(advisory.recommendedActionsEn.trim()) &&
+      advisory.references.every(
+        (reference) =>
+          reference.label.trim().length >= 2 && reference.url.trim().startsWith('https://'),
+      ));
+  return hausa && english && advisoryValid;
 }
 
 export function AdminNewsForm({
@@ -75,6 +101,18 @@ export function AdminNewsForm({
       : emptyContent,
   );
   const [pending, setPending] = useState(false);
+  const [advisory, setAdvisory] = useState<AdvisoryDraft>(
+    article?.securityAdvisory
+      ? {
+          severity: article.securityAdvisory.severity,
+          affectedAreaHa: article.securityAdvisory.affectedAreaHa,
+          affectedAreaEn: article.securityAdvisory.affectedAreaEn ?? '',
+          recommendedActionsHa: article.securityAdvisory.recommendedActionsHa,
+          recommendedActionsEn: article.securityAdvisory.recommendedActionsEn ?? '',
+          references: article.securityAdvisory.referencesJson,
+        }
+      : emptyAdvisory,
+  );
   const [notice, setNotice] = useState('');
   const [invalid, setInvalid] = useState(false);
   const limits =
@@ -89,16 +127,30 @@ export function AdminNewsForm({
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setNotice('');
-    if (!valid(content)) {
+    if (!valid(content, advisory)) {
       setInvalid(true);
       setNotice(messages.validationError);
       return;
     }
     setInvalid(false);
     setPending(true);
-    const payload = Object.fromEntries(
+    const payload: Record<string, unknown> = Object.fromEntries(
       Object.entries(content).map(([key, value]) => [key, value.trim() || null]),
-    ) as Record<string, string | null>;
+    );
+    payload.securityAdvisory =
+      content.categoryCode === 'SECURITY_ADVISORIES'
+        ? {
+            severity: advisory.severity,
+            affectedAreaHa: advisory.affectedAreaHa.trim(),
+            affectedAreaEn: advisory.affectedAreaEn.trim() || null,
+            recommendedActionsHa: advisory.recommendedActionsHa.trim(),
+            recommendedActionsEn: advisory.recommendedActionsEn.trim() || null,
+            references: advisory.references.map((reference) => ({
+              label: reference.label.trim(),
+              url: reference.url.trim(),
+            })),
+          }
+        : null;
     const result = article
       ? await updateNewsArticle(article.id, payload, article.updatedAt)
       : await createNewsArticle(payload);
@@ -159,7 +211,16 @@ export function AdminNewsForm({
           value={content.categoryCode}
           aria-invalid={invalid && !content.categoryCode}
           onChange={(event) =>
-            setContent((current) => ({ ...current, categoryCode: event.target.value }))
+            setContent((current) => {
+              if (
+                current.categoryCode === 'SECURITY_ADVISORIES' &&
+                event.target.value !== 'SECURITY_ADVISORIES' &&
+                !window.confirm(messages.advisoryRemovalWarning)
+              ) {
+                return current;
+              }
+              return { ...current, categoryCode: event.target.value };
+            })
           }
         >
           <option value="">{messages.selectCategory}</option>
@@ -175,6 +236,112 @@ export function AdminNewsForm({
           <small>{messages.categoryDraftOnly}</small>
         )}
       </div>
+      {content.categoryCode === 'SECURITY_ADVISORIES' ? (
+        <fieldset disabled={pending}>
+          <legend>{messages.securityAdvisoryDetails}</legend>
+          <p className="field-help">{messages.securityAdvisoryGuidance}</p>
+          <div className="admin-news-field">
+            <label htmlFor="advisory-severity">{messages.severity}</label>
+            <select
+              id="advisory-severity"
+              required
+              value={advisory.severity}
+              onChange={(event) =>
+                setAdvisory((current) => ({ ...current, severity: event.target.value }))
+              }
+            >
+              <option value="">{messages.selectSeverity}</option>
+              {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL'].map((severity) => (
+                <option key={severity} value={severity}>
+                  {messages.severityLabels[severity as keyof typeof messages.severityLabels]}
+                </option>
+              ))}
+            </select>
+          </div>
+          {(
+            [
+              ['affectedAreaHa', messages.affectedAreaHa, 1000],
+              ['recommendedActionsHa', messages.recommendedActionsHa, 3000],
+              ['affectedAreaEn', messages.affectedAreaEn, 1000],
+              ['recommendedActionsEn', messages.recommendedActionsEn, 3000],
+            ] as const
+          ).map(([name, label, maximum]) => (
+            <div className="admin-news-field" key={String(name)}>
+              <label htmlFor={`advisory-${name}`}>{label}</label>
+              <textarea
+                id={`advisory-${name}`}
+                value={advisory[name as keyof Omit<AdvisoryDraft, 'references'>] as string}
+                maxLength={Number(maximum)}
+                rows={5}
+                onChange={(event) =>
+                  setAdvisory((current) => ({ ...current, [name]: event.target.value }))
+                }
+              />
+            </div>
+          ))}
+          <fieldset>
+            <legend>{messages.references}</legend>
+            {advisory.references.map((reference, index) => (
+              <div className="advisory-reference-row" key={`reference-${index}`}>
+                <label htmlFor={`reference-label-${index}`}>{messages.referenceLabel}</label>
+                <input
+                  id={`reference-label-${index}`}
+                  value={reference.label}
+                  maxLength={160}
+                  onChange={(event) =>
+                    setAdvisory((current) => ({
+                      ...current,
+                      references: current.references.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, label: event.target.value } : item,
+                      ),
+                    }))
+                  }
+                />
+                <label htmlFor={`reference-url-${index}`}>{messages.referenceUrl}</label>
+                <input
+                  id={`reference-url-${index}`}
+                  type="url"
+                  value={reference.url}
+                  maxLength={2000}
+                  onChange={(event) =>
+                    setAdvisory((current) => ({
+                      ...current,
+                      references: current.references.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, url: event.target.value } : item,
+                      ),
+                    }))
+                  }
+                />
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() =>
+                    setAdvisory((current) => ({
+                      ...current,
+                      references: current.references.filter((_, itemIndex) => itemIndex !== index),
+                    }))
+                  }
+                >
+                  {messages.removeReference} {index + 1}
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="button button-secondary"
+              disabled={advisory.references.length >= 10}
+              onClick={() =>
+                setAdvisory((current) => ({
+                  ...current,
+                  references: [...current.references, { label: '', url: '' }],
+                }))
+              }
+            >
+              {messages.addReference}
+            </button>
+          </fieldset>
+        </fieldset>
+      ) : null}
       <fieldset disabled={pending}>
         <legend>
           {messages.hausaContent} · {messages.required}

@@ -43,6 +43,7 @@ const article: NewsArticle = {
   archivedAt: null,
   author: { id: 'author-id', displayName: 'Marubucin Gwaji' },
   category: { code: 'NEWS', slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
+  securityAdvisory: null,
 };
 const categories: NewsCategories['items'] = [
   {

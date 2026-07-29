@@ -3,6 +3,13 @@ import type { PipeTransform } from '@nestjs/common';
 import { z } from 'zod';
 
 export const publicNewsLanguageSchema = z.enum(['ha', 'en']);
+export const publicSecurityAdvisorySeveritySchema = z.enum([
+  'CRITICAL',
+  'HIGH',
+  'MEDIUM',
+  'LOW',
+  'INFORMATIONAL',
+]);
 export const publicNewsCategorySlugs = [
   'announcements',
   'security-advisories',
@@ -18,8 +25,18 @@ export const publicNewsQuerySchema = z
     page: z.coerce.number().int().positive().default(1),
     pageSize: z.coerce.number().int().positive().max(30).default(10),
     category: z.enum(publicNewsCategorySlugs).optional(),
+    severity: publicSecurityAdvisorySeveritySchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (value.severity && value.category !== 'security-advisories') {
+      context.addIssue({
+        code: 'custom',
+        path: ['severity'],
+        message: 'Severity requires the security-advisories category.',
+      });
+    }
+  });
 
 export const publicNewsDetailParametersSchema = z
   .object({

@@ -507,6 +507,31 @@ real-time transport. The existing public cache policy applies, so approved Live 
 up to the active cache interval to appear. Priority, severity, story grouping, RSS, sitemap,
 notifications, rich text, images, scheduling, comments, and analytics remain deferred.
 
+### Structured security advisories
+
+Articles in the controlled `SECURITY_ADVISORIES` category now require a one-to-one structured
+advisory record. Hausa remains canonical: severity, affected-area guidance, and recommended
+actions in Hausa are mandatory. English advisory fields must be complete together and are
+permitted only when the article has a complete English translation. Other news categories cannot
+store advisory data. Changing a draft away from the security-advisory category removes the
+structured row atomically when the draft is saved.
+
+Severity is one of `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, or `INFORMATIONAL`; these labels are
+editorial classifications, not CVSS calculations. References are optional, limited to ten,
+HTTPS-only, free of embedded credentials, and deduplicated by normalized URL. The feature does
+not fetch, crawl, preview, score, or otherwise trust external destinations.
+
+Published advisories are available at `/news/security` and `/en/news/security`; the public API
+uses the existing `GET /api/public/news` endpoint with
+`category=security-advisories` and an optional allowlisted `severity` filter. The admin list uses
+the same category/severity pairing. Public detail pages show the localized structured fields and
+safe external reference links, but never expose article IDs, staff identities, workflow history,
+or internal security data. Homepage advisory blocks are capped at three, and ordinary recent
+news excludes both Live Updates and security advisories to prevent duplication. The normal
+60-second public cache remains in effect; no polling, push delivery, automatic threat feed,
+scanner, alert subscription, geotargeting, taxonomy engine, CVSS calculator, or AI-generated
+advice is included.
+
 ## Environment variables
 
 Create `.env` only at the repository root. Next.js and Prisma resolve that file from their

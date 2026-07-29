@@ -5,17 +5,20 @@ import type { PublicNewsItem } from '@/lib/public-news-api';
 
 import { FeatureStatusCard } from './feature-status-card';
 import { HomepageLiveUpdates } from './homepage-live-updates';
+import { HomepageSecurityAdvisories } from './homepage-security-advisories';
 import { RecentPublicNews } from './recent-public-news';
 
 export function PublicHome({
   locale,
   recentNews = [],
   liveUpdates = [],
+  securityAdvisories = [],
   initialNow,
 }: Readonly<{
   locale: Locale;
   recentNews?: readonly PublicNewsItem[];
   liveUpdates?: readonly PublicNewsItem[];
+  securityAdvisories?: readonly PublicNewsItem[];
   initialNow?: number;
 }>) {
   const messages = getMessages(locale);
@@ -71,6 +74,7 @@ export function PublicHome({
       </section>
 
       <RecentPublicNews items={recentNews} locale={locale} />
+      <HomepageSecurityAdvisories locale={locale} items={securityAdvisories} />
       <HomepageLiveUpdates locale={locale} items={liveUpdates} initialNow={initialNow} />
 
       <section className="section-spacing" aria-labelledby="pillars-title">

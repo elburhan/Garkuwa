@@ -17,6 +17,7 @@ const actor: StaffPrincipal = {
 };
 const content = {
   categoryCode: 'NEWS' as const,
+  securityAdvisory: null,
   titleHa: 'Sanarwar Tsaro',
   summaryHa: 'Wannan taƙaitaccen bayanin gwaji ne na sashen edita.',
   bodyHa: `Cikakken rubutun gwaji ne. ${'Bayani '.repeat(20)}`,
@@ -32,9 +33,12 @@ describe('NewsService', () => {
   const findUniqueOrThrow = jest.fn<(input: unknown) => Promise<unknown>>();
   const historyCreate = jest.fn<(input: unknown) => Promise<unknown>>();
   const categoryFindFirst = jest.fn<(input: unknown) => Promise<unknown>>();
+  const advisoryDeleteMany = jest.fn<(input: unknown) => Promise<unknown>>();
+  const advisoryUpsert = jest.fn<(input: unknown) => Promise<unknown>>();
   const transactionClient = {
     newsArticle: { findUnique, updateMany, findUniqueOrThrow },
     newsArticleStatusHistory: { create: historyCreate },
+    newsSecurityAdvisory: { deleteMany: advisoryDeleteMany, upsert: advisoryUpsert },
   };
   const transaction = jest.fn(async (callback: (client: typeof transactionClient) => unknown) =>
     callback(transactionClient),

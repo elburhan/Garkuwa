@@ -1802,3 +1802,57 @@ h3 {
     animation: none;
   }
 }
+
+.advisory-section,
+.advisory-panel {
+  border-block: 0.25rem solid var(--warning, #a15c00);
+}
+
+.advisory-panel {
+  margin-block: var(--space-6, 2rem);
+  padding: var(--space-5, 1.5rem);
+  background: var(--surface, #fff);
+  border-inline: 1px solid var(--border, #d6d9dc);
+  border-radius: var(--radius, 0.5rem);
+}
+
+.advisory-severity {
+  display: inline-block;
+  margin-block: 0 0.75rem;
+  padding: 0.25rem 0.65rem;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.severity-critical,
+.severity-high {
+  color: #8b1a1a;
+}
+
+.severity-medium {
+  color: #7a4b00;
+}
+
+.severity-low,
+.severity-informational {
+  color: #174f70;
+}
+
+.public-news-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+  margin-block: 1.5rem;
+}
+
+.public-news-filter label {
+  width: 100%;
+  font-weight: 700;
+}
+
+.external-link-notice {
+  color: var(--text-secondary, #4d5964);
+  font-size: 0.925rem;
+}

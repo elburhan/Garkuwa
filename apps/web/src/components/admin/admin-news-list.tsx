@@ -5,6 +5,7 @@ import type { AdminPrincipal } from '@/lib/admin-auth';
 import {
   buildNewsPath,
   newsStatuses,
+  securityAdvisorySeverities,
   type AdminNewsSearchParams,
   type NewsArticleList,
   type NewsCategories,
@@ -30,6 +31,9 @@ export function AdminNewsList({
     dateStyle: 'medium',
   });
   const languageQuery = locale === 'en' ? '?lang=en' : '';
+  const selectedCategory = Array.isArray(parameters.category)
+    ? parameters.category[0]
+    : parameters.category;
   return (
     <main className="admin-content content-width section-spacing" lang={locale}>
       <header className="admin-landing-header">
@@ -80,6 +84,20 @@ export function AdminNewsList({
             </option>
           ))}
         </select>
+        <label htmlFor="news-severity-filter">{messages.filterSeverity}</label>
+        <select
+          id="news-severity-filter"
+          name="severity"
+          defaultValue={String(parameters.severity ?? '')}
+          disabled={selectedCategory !== 'SECURITY_ADVISORIES'}
+        >
+          <option value="">{messages.allSeverities}</option>
+          {securityAdvisorySeverities.map((severity) => (
+            <option key={severity} value={severity}>
+              {messages.severityLabels[severity]}
+            </option>
+          ))}
+        </select>
         <button className="button" type="submit">
           {messages.applyFilter}
         </button>
@@ -99,6 +117,7 @@ export function AdminNewsList({
                 <th scope="col">{messages.title}</th>
                 <th scope="col">{messages.statusLabel}</th>
                 <th scope="col">{messages.category}</th>
+                <th scope="col">{messages.severity}</th>
                 <th scope="col">{messages.author}</th>
                 <th scope="col">{messages.lastUpdated}</th>
                 <th scope="col">{messages.created}</th>
@@ -115,6 +134,11 @@ export function AdminNewsList({
                   </td>
                   <td>{messages.status[article.status]}</td>
                   <td>{locale === 'ha' ? article.category.nameHa : article.category.nameEn}</td>
+                  <td>
+                    {article.securityAdvisory
+                      ? messages.severityLabels[article.securityAdvisory.severity]
+                      : '—'}
+                  </td>
                   <td>{article.author.displayName}</td>
                   <td>{dates.format(new Date(article.updatedAt))}</td>
                   <td>{dates.format(new Date(article.createdAt))}</td>

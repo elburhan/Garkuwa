@@ -4,6 +4,11 @@ import type { Locale } from '@/i18n';
 
 import { webEnvironment } from './env';
 
+const httpsUrlSchema = z.url().refine((value) => {
+  const url = new URL(value);
+  return url.protocol === 'https:' && !url.username && !url.password;
+});
+
 const publicNewsItemSchema = z.object({
   slug: z.string(),
   title: z.string(),
@@ -11,6 +16,11 @@ const publicNewsItemSchema = z.object({
   publishedAt: z.iso.datetime({ offset: true }),
   hasEnglishTranslation: z.boolean(),
   category: z.object({ slug: z.string(), name: z.string() }),
+  securityAdvisory: z
+    .object({
+      severity: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL']),
+    })
+    .nullable(),
 });
 const publicNewsListSchema = z.object({
   generatedAt: z.iso.datetime({ offset: true }),
@@ -22,7 +32,24 @@ const publicNewsListSchema = z.object({
     totalPages: z.number().int().nonnegative(),
   }),
 });
-const publicNewsDetailSchema = publicNewsItemSchema.extend({ body: z.string() });
+const publicNewsDetailSchema = publicNewsItemSchema.extend({
+  body: z.string(),
+  securityAdvisory: z
+    .object({
+      severity: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL']),
+      affectedArea: z.string(),
+      recommendedActions: z.string(),
+      references: z
+        .array(
+          z.object({
+            label: z.string(),
+            url: httpsUrlSchema,
+          }),
+        )
+        .max(10),
+    })
+    .nullable(),
+});
 
 export type PublicNewsItem = z.infer<typeof publicNewsItemSchema>;
 export type PublicNewsList = z.infer<typeof publicNewsListSchema>;
@@ -31,11 +58,28 @@ export type PublicNewsResult<T> =
   { kind: 'success'; data: T } | { kind: 'not-found' | 'invalid' | 'unavailable' };
 
 const pageSchema = z.coerce.number().int().positive();
+export const publicSecurityAdvisorySeverities = [
+  'CRITICAL',
+  'HIGH',
+  'MEDIUM',
+  'LOW',
+  'INFORMATIONAL',
+] as const;
+const severitySchema = z.enum(publicSecurityAdvisorySeverities);
 
 export function parsePublicNewsPage(value: string | string[] | undefined): number | null {
   if (value === undefined) return 1;
   if (Array.isArray(value)) return null;
   const result = pageSchema.safeParse(value);
+  return result.success ? result.data : null;
+}
+
+export function parsePublicAdvisorySeverity(
+  value: string | string[] | undefined,
+): (typeof publicSecurityAdvisorySeverities)[number] | undefined | null {
+  if (value === undefined) return undefined;
+  if (Array.isArray(value)) return null;
+  const result = severitySchema.safeParse(value);
   return result.success ? result.data : null;
 }
 
@@ -65,7 +109,13 @@ async function publicNewsFetch<T>(
 
 export function loadPublicNews(
   locale: Locale,
-  options: { page?: number; pageSize?: number; category?: string; fetcher?: typeof fetch } = {},
+  options: {
+    page?: number;
+    pageSize?: number;
+    category?: string;
+    severity?: string;
+    fetcher?: typeof fetch;
+  } = {},
 ): Promise<PublicNewsResult<PublicNewsList>> {
   const query = new URLSearchParams({
     lang: locale,
@@ -75,6 +125,7 @@ export function loadPublicNews(
   if (options.category) {
     query.set('category', options.category);
   }
+  if (options.severity) query.set('severity', options.severity);
   return publicNewsFetch(`public/news?${query}`, publicNewsListSchema, options.fetcher);
 }
 

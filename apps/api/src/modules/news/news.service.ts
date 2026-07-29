@@ -15,6 +15,14 @@ import { createNewsSlugBase, newsSlugCandidate } from './news-slug.js';
 export const NEWS_EDITORIAL_CLOCK = Symbol('NEWS_EDITORIAL_CLOCK');
 const minimalActorSelect = { id: true, displayName: true } as const;
 const categorySelect = { code: true, slug: true, nameHa: true, nameEn: true } as const;
+const advisoryDetailSelect = {
+  severity: true,
+  affectedAreaHa: true,
+  affectedAreaEn: true,
+  recommendedActionsHa: true,
+  recommendedActionsEn: true,
+  referencesJson: true,
+} as const;
 const articleSelect = {
   id: true,
   slug: true,
@@ -32,7 +40,21 @@ const articleSelect = {
   archivedAt: true,
   author: { select: minimalActorSelect },
   category: { select: categorySelect },
+  securityAdvisory: { select: advisoryDetailSelect },
 } as const;
+
+function advisoryData(input: CreateNewsArticleDto | UpdateNewsArticleDto) {
+  const advisory = input.securityAdvisory;
+  if (!advisory) return null;
+  return {
+    severity: advisory.severity,
+    affectedAreaHa: advisory.affectedAreaHa,
+    affectedAreaEn: advisory.affectedAreaEn,
+    recommendedActionsHa: advisory.recommendedActionsHa,
+    recommendedActionsEn: advisory.recommendedActionsEn,
+    referencesJson: advisory.references,
+  };
+}
 
 function conflict(): ConflictException {
   return new ConflictException('The article changed and must be refreshed.');
@@ -73,6 +95,7 @@ export class NewsService {
       ...(query.status ? { status: query.status } : {}),
       ...(query.authorId ? { authorId: query.authorId } : {}),
       ...(query.category ? { category: { code: query.category } } : {}),
+      ...(query.severity ? { securityAdvisory: { severity: query.severity } } : {}),
     };
     const [totalItems, items] = await this.prisma.$transaction([
       this.prisma.newsArticle.count({ where }),
@@ -88,6 +111,7 @@ export class NewsService {
           updatedAt: true,
           author: { select: minimalActorSelect },
           category: { select: categorySelect },
+          securityAdvisory: { select: { severity: true } },
         },
         orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
         skip: (query.page - 1) * query.pageSize,
@@ -139,6 +163,9 @@ export class NewsService {
               status: NewsArticleStatus.DRAFT,
               createdAt,
               updatedAt: createdAt,
+              ...(advisoryData(input)
+                ? { securityAdvisory: { create: advisoryData(input)! } }
+                : {}),
             },
             select: articleSelect,
           });
@@ -207,6 +234,17 @@ export class NewsService {
         data: { ...content, categoryId: category.id, updatedAt },
       });
       if (result.count !== 1) throw conflict();
+      const advisory = advisoryData(input);
+      if (advisory) {
+        await transaction.newsSecurityAdvisory.upsert({
+          where: { articleId },
+          create: { articleId, ...advisory },
+          update: advisory,
+          select: { articleId: true },
+        });
+      } else {
+        await transaction.newsSecurityAdvisory.deleteMany({ where: { articleId } });
+      }
       const article = await transaction.newsArticle.findUniqueOrThrow({
         where: { id: articleId },
         select: articleSelect,
@@ -224,7 +262,19 @@ export class NewsService {
           authorId: true,
           status: true,
           updatedAt: true,
-          category: { select: { isActive: true } },
+          titleEn: true,
+          summaryEn: true,
+          bodyEn: true,
+          category: { select: { isActive: true, code: true } },
+          securityAdvisory: {
+            select: {
+              severity: true,
+              affectedAreaHa: true,
+              affectedAreaEn: true,
+              recommendedActionsHa: true,
+              recommendedActionsEn: true,
+            },
+          },
         },
       });
       if (!existing) throw new NotFoundException('Article not found.');
@@ -239,6 +289,18 @@ export class NewsService {
         !existing.category.isActive
       ) {
         throw new ConflictException('The article category is unavailable.');
+      }
+      if (
+        (input.decision === 'SUBMIT_FOR_REVIEW' || input.decision === 'APPROVE_PUBLICATION') &&
+        existing.category.code === 'SECURITY_ADVISORIES' &&
+        (!existing.securityAdvisory ||
+          Boolean(existing.titleEn && existing.summaryEn && existing.bodyEn) !==
+            Boolean(
+              existing.securityAdvisory?.affectedAreaEn &&
+              existing.securityAdvisory.recommendedActionsEn,
+            ))
+      ) {
+        throw new ConflictException('The structured security advisory is incomplete.');
       }
       const expectedUpdatedAt = new Date(input.expectedUpdatedAt);
       if (existing.updatedAt.getTime() !== expectedUpdatedAt.getTime()) throw conflict();

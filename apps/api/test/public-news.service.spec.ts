@@ -32,6 +32,7 @@ describe('PublicNewsService', () => {
         summaryEn: null,
         bodyEn: null,
         category: { slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
+        securityAdvisory: null,
       },
     ]);
 
@@ -57,6 +58,7 @@ describe('PublicNewsService', () => {
           publishedAt: publishedAt.toISOString(),
           hasEnglishTranslation: false,
           category: { slug: 'news', name: 'Labarai' },
+          securityAdvisory: null,
         },
       ],
       pagination: { page: 1, pageSize: 10, totalItems: 1, totalPages: 1 },
@@ -72,6 +74,7 @@ describe('PublicNewsService', () => {
         summaryEn: 'A concise public safety notice.',
         publishedAt,
         category: { slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
+        securityAdvisory: null,
       },
     ]);
 
@@ -105,6 +108,7 @@ describe('PublicNewsService', () => {
       publishedAt: publishedAt.toISOString(),
       hasEnglishTranslation: true,
       category: { slug: 'news', name: 'News' },
+      securityAdvisory: null,
     });
     expect(JSON.stringify(result)).not.toMatch(
       /titleHa|summaryHa|status|author|createdAt|updatedAt/,
@@ -133,6 +137,7 @@ describe('PublicNewsService', () => {
       bodyEn: 'First paragraph.\n\nSecond paragraph.',
       publishedAt,
       category: { slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
+      securityAdvisory: null,
     });
     const result = await service.detail('sanarwar-tsaro', 'en');
     expect(result).toEqual({
@@ -143,6 +148,7 @@ describe('PublicNewsService', () => {
       publishedAt: publishedAt.toISOString(),
       hasEnglishTranslation: true,
       category: { slug: 'news', name: 'News' },
+      securityAdvisory: null,
     });
     expect(JSON.stringify(result)).not.toMatch(/status|author|history|reason|titleHa|bodyHa|id/);
   });

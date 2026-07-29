@@ -22,6 +22,7 @@ const list: PublicNewsList = {
       publishedAt,
       hasEnglishTranslation: true,
       category: { slug: 'news', name: 'Labarai' },
+      securityAdvisory: null,
     },
   ],
   pagination: { page: 2, pageSize: 10, totalItems: 21, totalPages: 3 },
@@ -29,6 +30,7 @@ const list: PublicNewsList = {
 const detail: PublicNewsDetail = {
   ...list.items[0]!,
   body: 'Sakin layi na farko.\n\nSakin layi na biyu.',
+  securityAdvisory: null,
 };
 
 afterEach(cleanup);
@@ -48,6 +50,31 @@ describe('public news delivery', () => {
     expect(screen.getByRole('link', { name: 'Rubutun Turanci' }).getAttribute('href')).toBe(
       '/en/news?page=2',
     );
+  });
+
+  it('renders structured advisory text and hardened external references without HTML interpretation', () => {
+    const { container } = render(
+      <PublicNewsArticle
+        locale="ha"
+        article={{
+          ...detail,
+          category: { slug: 'security-advisories', name: 'Shawarwarin tsaro' },
+          securityAdvisory: {
+            severity: 'HIGH',
+            affectedArea: '<script>ba a aiwatar ba</script>\n\nMasu amfani da tsohon tsari.',
+            recommendedActions: 'A sabunta tsarin.\n\nA tabbatar da tushen sanarwa.',
+            references: [{ label: 'Tushen hukuma', url: 'https://example.org/advisory' }],
+          },
+        }}
+      />,
+    );
+    expect(screen.getByText('Mai tsanani')).toBeTruthy();
+    expect(container.textContent).toContain('<script>ba a aiwatar ba</script>');
+    expect(container.querySelector('script')).toBeNull();
+    const reference = screen.getByRole('link', { name: /Tushen hukuma/ });
+    expect(reference.getAttribute('target')).toBe('_blank');
+    expect(reference.getAttribute('rel')).toContain('noopener');
+    expect(reference.getAttribute('referrerpolicy')).toBe('no-referrer');
   });
 
   it('renders only supplied English content and links safely back to canonical Hausa', () => {
