@@ -1,27 +1,71 @@
-import { getApiEnvironment } from '../src/config/environment.js';
+import { parseApiEnvironment } from '../src/config/environment.js';
 
-describe('API authentication environment', () => {
-  const originalNodeEnvironment = process.env.NODE_ENV;
-  const originalCookieSecure = process.env.STAFF_SESSION_COOKIE_SECURE;
+const baseEnvironment: NodeJS.ProcessEnv = {
+  NODE_ENV: 'development',
+  API_PORT: '4000',
+  WEB_ORIGIN: 'http://localhost:3000',
+  DATABASE_URL: 'postgresql://user:password@localhost:5432/garkuwa',
+  CONTACT_DATA_ENCRYPTION_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  STAFF_SESSION_COOKIE_SECURE: 'false',
+  TRUST_PROXY: 'false',
+  INCIDENT_STORAGE_DRIVER: 'filesystem',
+  INCIDENT_STORAGE_FILESYSTEM_ROOT: '.var/test-uploads',
+};
 
-  afterEach(() => {
-    process.env.NODE_ENV = originalNodeEnvironment;
-    process.env.STAFF_SESSION_COOKIE_SECURE = originalCookieSecure;
+describe('API environment validation', () => {
+  it('allows the explicit local development profile', () => {
+    expect(parseApiEnvironment(baseEnvironment)).toMatchObject({
+      NODE_ENV: 'development',
+      STAFF_SESSION_COOKIE_SECURE: false,
+      TRUST_PROXY: 'false',
+      INCIDENT_STORAGE_DRIVER: 'filesystem',
+    });
   });
 
-  it('requires a Secure staff session cookie in production', () => {
-    process.env.NODE_ENV = 'production';
-    process.env.STAFF_SESSION_COOKIE_SECURE = 'false';
+  it('rejects insecure cookies, origins, and filesystem storage in production', () => {
+    expect(() =>
+      parseApiEnvironment({
+        ...baseEnvironment,
+        NODE_ENV: 'production',
+      }),
+    ).toThrow(/STAFF_SESSION_COOKIE_SECURE|WEB_ORIGIN|INCIDENT_STORAGE_DRIVER/);
+  });
 
-    expect(() => getApiEnvironment()).toThrow(
-      /must be true when NODE_ENV is production[\s\S]*STAFF_SESSION_COOKIE_SECURE/,
+  it('accepts a complete private S3 production profile', () => {
+    expect(
+      parseApiEnvironment({
+        ...baseEnvironment,
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://user:nonplaceholder@db.example.invalid:5432/garkuwa',
+        CONTACT_DATA_ENCRYPTION_KEY: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=',
+        WEB_ORIGIN: 'https://www.example.invalid',
+        STAFF_SESSION_COOKIE_SECURE: 'true',
+        TRUST_PROXY: 'loopback',
+        INCIDENT_STORAGE_DRIVER: 's3',
+        S3_ENDPOINT: 'https://storage.example.invalid',
+        S3_REGION: 'us-east-1',
+        S3_BUCKET: 'garkuwa-private-incidents',
+        S3_ACCESS_KEY_ID: 'fake-access-for-validation',
+        S3_SECRET_ACCESS_KEY: 'fake-secret-for-validation',
+      }),
+    ).toMatchObject({
+      NODE_ENV: 'production',
+      INCIDENT_STORAGE_DRIVER: 's3',
+      STAFF_SESSION_COOKIE_SECURE: true,
+    });
+  });
+
+  it('reports invalid keys without echoing their secret values', () => {
+    const secret = 'not-a-valid-secret-value';
+    expect(() =>
+      parseApiEnvironment({
+        ...baseEnvironment,
+        CONTACT_DATA_ENCRYPTION_KEY: secret,
+      }),
+    ).toThrow(
+      expect.objectContaining({
+        message: expect.not.stringContaining(secret),
+      }),
     );
-  });
-
-  it('allows an insecure cookie only outside production for local HTTP development', () => {
-    process.env.NODE_ENV = 'development';
-    process.env.STAFF_SESSION_COOKIE_SECURE = 'false';
-
-    expect(getApiEnvironment().STAFF_SESSION_COOKIE_SECURE).toBe(false);
   });
 });

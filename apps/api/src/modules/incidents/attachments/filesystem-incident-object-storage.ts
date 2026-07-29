@@ -1,5 +1,5 @@
-import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdir, rm, stat } from 'node:fs/promises';
+import { constants as fsConstants, createReadStream, createWriteStream } from 'node:fs';
+import { access, mkdir, rm, stat } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -14,6 +14,19 @@ export class FilesystemIncidentObjectStorage {
 
   constructor(@Inject(INCIDENT_STORAGE_ROOT) root: string) {
     this.root = resolve(root);
+  }
+
+  async initialize(): Promise<void> {
+    await mkdir(this.root, { recursive: true });
+    await access(this.root, fsConstants.R_OK | fsConstants.W_OK);
+  }
+
+  async checkHealth(): Promise<void> {
+    const metadata = await stat(this.root);
+    if (!metadata.isDirectory()) {
+      throw new Error('Private incident storage root is not a directory.');
+    }
+    await access(this.root, fsConstants.R_OK | fsConstants.W_OK);
   }
 
   private pathFor(objectKey: string): string {
@@ -63,4 +76,6 @@ export class FilesystemIncidentObjectStorage {
   async deleteObject(objectKey: string): Promise<void> {
     await rm(this.pathFor(objectKey), { force: true });
   }
+
+  async close(): Promise<void> {}
 }

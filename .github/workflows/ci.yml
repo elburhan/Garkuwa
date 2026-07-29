@@ -10,12 +10,38 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_DB: garkuwa
+          POSTGRES_USER: garkuwa
+          POSTGRES_PASSWORD: garkuwa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U garkuwa -d garkuwa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       API_PORT: 4000
       WEB_ORIGIN: http://localhost:3000
       NEXT_PUBLIC_API_BASE_URL: http://localhost:4000/api
       NEXT_PUBLIC_APP_URL: http://localhost:3000
+      DEPLOYMENT_ENV: local
       DATABASE_URL: postgresql://garkuwa:garkuwa@localhost:5432/garkuwa?schema=public
+      CONTACT_DATA_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      STAFF_SESSION_COOKIE_SECURE: false
+      TRUST_PROXY: false
+      LOG_LEVEL: warn
+      INCIDENT_STORAGE_DRIVER: filesystem
+      INCIDENT_STORAGE_FILESYSTEM_ROOT: .var/ci-incident-uploads
+      ALLOW_PRODUCTION_FILESYSTEM_STORAGE: false
+      S3_FORCE_PATH_STYLE: false
+      DEPENDENCY_CHECK_TIMEOUT_MS: 5000
+      STORAGE_OPERATION_TIMEOUT_MS: 30000
+      SHUTDOWN_GRACE_PERIOD_MS: 30000
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -34,8 +60,45 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Audit production dependency graph
+        run: pnpm audit --prod
+
+      - name: Development dependency advisory review — non-production accepted risk
+        continue-on-error: true
+        run: pnpm audit
+
       - name: Generate Prisma client
         run: pnpm db:generate
+
+      - name: Apply migrations using the production command
+        run: pnpm db:migrate:deploy
+
+      - name: Verify database and migration status
+        run: |
+          pnpm db:verify
+          pnpm db:status
+
+      - name: Validate environment configuration
+        run: pnpm env:check
+
+      - name: Validate a production configuration profile
+        env:
+          NODE_ENV: production
+          DEPLOYMENT_ENV: production
+          DATABASE_URL: postgresql://release_check:nonplaceholder@db.example.invalid:5432/garkuwa
+          CONTACT_DATA_ENCRYPTION_KEY: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=
+          WEB_ORIGIN: https://www.example.invalid
+          NEXT_PUBLIC_API_BASE_URL: https://api.example.invalid/api
+          NEXT_PUBLIC_APP_URL: https://www.example.invalid
+          STAFF_SESSION_COOKIE_SECURE: true
+          TRUST_PROXY: loopback
+          INCIDENT_STORAGE_DRIVER: s3
+          S3_ENDPOINT: https://storage.example.invalid
+          S3_REGION: us-east-1
+          S3_BUCKET: garkuwa-private-incidents
+          S3_ACCESS_KEY_ID: ci-release-check-access
+          S3_SECRET_ACCESS_KEY: ci-release-check-secret
+        run: pnpm env:check
 
       - name: Check formatting
         run: pnpm format:check
@@ -51,3 +114,14 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Check patch hygiene
+        run: git diff --check
+
+      - name: Reject committed environment files
+        run: |
+          tracked="$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v -E '(^|/)\.env\.example$' || true)"
+          if [ -n "$tracked" ]; then
+            echo "Committed environment file detected."
+            exit 1
+          fi

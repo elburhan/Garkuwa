@@ -15,6 +15,8 @@ describe('filesystem incident object storage', () => {
 
   it('stores, streams and deletes exact private bytes beneath its root', async () => {
     const storage = new FilesystemIncidentObjectStorage(root);
+    await storage.initialize();
+    await expect(storage.checkHealth()).resolves.toBeUndefined();
     const body = Buffer.from('private deterministic bytes');
     const objectKey = 'incidents/2026/07/test-object';
     await storage.putObject({

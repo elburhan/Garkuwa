@@ -153,10 +153,10 @@ be written to application logs.
 The endpoint accepts JSON only and uses a 100 KB JSON body limit. Its in-memory protection allows
 five submissions per client IP in 15 minutes and rejects an identical normalized submission from
 the same IP for five minutes. These controls are per API process and reset on restart. A shared
-limiter store is required before running multiple API replicas. Express proxy trust is explicitly
-disabled because the production proxy topology is not approved yet; deployment configuration must
-be reviewed before trusting any forwarded client-IP header. The HTTP server uses a 10-second
-request timeout. CAPTCHA or Turnstile remains a possible later escalation and is not implemented.
+limiter store is required before running multiple API replicas. Proxy trust defaults to disabled;
+`TRUST_PROXY=loopback` may be used only when that matches the reviewed deployment topology.
+There is no global request timeout that would interrupt bounded multipart uploads. CAPTCHA or
+Turnstile remains a possible later escalation and is not implemented.
 
 No production category taxonomy is seeded. Garkuwa Foundation must approve Hausa and English
 category names and descriptions before launch. Tests create or mock their own narrowly scoped
@@ -362,13 +362,12 @@ SHA-256 over exact bytes, and extracts supported image dimensions. PDF page coun
 Original bytes are preserved; EXIF/GPS display, OCR, classification, face recognition,
 thumbnails, transformations, audio, video, SVG, Office files, archives, and analysis are excluded.
 
-The implemented private storage adapter writes development files beneath
-`INCIDENT_STORAGE_FILESYSTEM_ROOT`, outside public web assets. Configure
-`INCIDENT_STORAGE_DRIVER=filesystem`. This adapter is development-only; an S3-compatible
-production adapter and credentials are not implemented. Storage precedes the database
-transaction. Database failure triggers best-effort object cleanup, while storage failure creates
-no incident. Process termination between storage and compensation can leave an orphan requiring
-operational cleanup.
+The filesystem adapter writes development files beneath `INCIDENT_STORAGE_FILESYSTEM_ROOT`,
+outside public web assets. Production should use `INCIDENT_STORAGE_DRIVER=s3` with the private
+S3-compatible adapter and separately managed credentials. Neither adapter creates public URLs.
+Storage precedes the database transaction. Database failure triggers best-effort object cleanup,
+while storage failure creates no incident. Process termination between storage and compensation
+can leave an orphan requiring operational cleanup.
 
 Attachments start `QUARANTINED`. Malware scanning is not integrated, and there is no fake clean
 result or scan-bypass endpoint. Authenticated incident viewers may list safe metadata at
@@ -555,9 +554,23 @@ encrypted contact values unrecoverable.
 `STAFF_SESSION_COOKIE_SECURE` is also required and accepts only `true` or `false`. Use `false` for
 local HTTP development and `true` for every HTTPS production deployment.
 
-`INCIDENT_STORAGE_DRIVER` currently accepts only `filesystem`.
-`INCIDENT_STORAGE_FILESYSTEM_ROOT` selects its private development root (for example
-`.var/incident-uploads`). Do not place it beneath `apps/web/public`; `.var` is ignored by Git.
+`INCIDENT_STORAGE_DRIVER` accepts `filesystem` for local development or `s3` for a private
+S3-compatible service. Filesystem storage is rejected in production unless the explicit
+`ALLOW_PRODUCTION_FILESYSTEM_STORAGE=true` emergency override is supplied. S3 mode requires the
+endpoint, region, bucket, access key, secret key, and path-style setting shown in `.env.example`.
+The adapter never creates public ACLs or public URLs. `INCIDENT_STORAGE_FILESYSTEM_ROOT` selects
+the local private root (for example `.var/incident-uploads`); never place it beneath
+`apps/web/public`.
+
+`TRUST_PROXY` defaults to `false`. Use `loopback` only when the actual deployment has one trusted
+proxy on the same host/network boundary. Incorrect trust can make IP-based abuse controls unsafe.
+`DEPENDENCY_CHECK_TIMEOUT_MS` and `STORAGE_OPERATION_TIMEOUT_MS` bound dependency probes and
+private-object operations without imposing a global request timeout on legitimate multipart
+uploads. `SHUTDOWN_GRACE_PERIOD_MS` bounds connection draining after readiness is removed.
+Production requires HTTPS `WEB_ORIGIN`, a Secure staff cookie, and HTTPS public web/API URLs. Set
+`DEPLOYMENT_ENV=production` for deployed web builds; the default `local` profile allows an ordinary
+local `next build` without confusing Next.js's build-time `NODE_ENV=production` with a real
+deployment.
 
 `NEXT_PUBLIC_API_BASE_URL` must be the public API prefix, such as
 `http://localhost:4000/api` for local development. The web client validates this URL and safely
@@ -576,8 +589,11 @@ pnpm format          # format repository files
 pnpm format:check    # verify formatting
 pnpm db:generate     # generate Prisma Client
 pnpm db:migrate      # create or apply a development migration against a live database
+pnpm db:migrate:deploy # apply checked-in migrations in staging/production
 pnpm db:status       # compare checked-in migrations with a live database
 pnpm db:verify       # verify PostgreSQL reachability and PostGIS activation
+pnpm env:check       # validate API and web environment configuration
+pnpm release:smoke   # smoke-test running API/web URLs
 pnpm staff:set-password --email staff@example.org # explicitly set an existing staff password
 pnpm db:studio       # open Prisma Studio
 pnpm docker:up       # start PostgreSQL/PostGIS
@@ -590,23 +606,22 @@ connect. No live database is needed for Prisma Client generation, schema validat
 type-checking, foundation tests, or application builds; running the API itself does require a
 reachable, migrated PostgreSQL database.
 
-`GET /api/health` reports only application-process health with `status`, `service`, and an
-ISO-8601 `timestamp`. It does not perform or claim a database health check.
+`GET /api/health` remains the compatibility process-health route.
+`GET /api/health/live` reports process liveness without checking dependencies.
+`GET /api/health/ready` checks PostgreSQL and the selected private object store with a bounded
+timeout and returns 503 during bootstrap, dependency failure, or shutdown. Orchestrators should
+restart on liveness failure and route traffic only on readiness success.
 
 ## Staff email identity requirement
 
-The future authentication service must trim staff email addresses and normalize them to
-lowercase before both insertion and lookup. It must not rely only on PostgreSQL's ordinary,
-case-sensitive unique constraint for case-insensitive identity. Authentication and
-password-handling services are intentionally not implemented at this stage.
+Staff authentication trims email addresses and normalizes them to lowercase before insertion and
+lookup. It does not rely only on PostgreSQL's ordinary case-sensitive unique constraint.
 
 ## Verification boundaries
 
-The checked-in Prisma schema and manually prepared initial migration define the intended staff
-identity shape, and the local database has already been verified for connectivity, PostGIS,
-and the initial migration. The CI workflow validates the schema indirectly by generating Prisma
-Client and completes formatting, linting, type-checking, tests, and builds using safe
-placeholder URLs. It does not start PostgreSQL or run migrations.
+CI starts PostgreSQL/PostGIS, generates Prisma Client, applies checked-in migrations through
+`migrate deploy`, verifies migration status, validates development and production-like environment
+profiles, and then runs formatting, linting, type-checking, tests, builds, and patch hygiene.
 
 ## Current scope
 
@@ -615,11 +630,45 @@ validation, database connectivity, local tooling, foundational tests, anonymous 
 submission, secure staff authentication, controlled incident workflow, and restricted audited
 contact access and internal staff notes described above. It intentionally does **not** implement
 public tracking, reporter accounts, bulk contact reveal, contact export, arbitrary incident editing or
-deletion, media uploads, device-location
+deletion, unrestricted media types, device-location
 access, maps, production category management, editorial analytics,
-object storage, notifications, Redis, queues, outbox events, audit-log business logic, Kubernetes,
+public object storage, notifications, Redis, queues, outbox events, Kubernetes,
 microservices, or Kafka. The platform remains an incremental foundation and is not a claim of
 production readiness.
+
+## Release operations and known deployment limits
+
+Operational documentation is source controlled:
+
+- [deployment architecture](docs/operations/deployment.md)
+- [release runbook](docs/operations/release-runbook.md)
+- [rollback runbook](docs/operations/rollback-runbook.md)
+- [backup and restore](docs/operations/backup-and-restore.md)
+- [data-retention decisions](docs/operations/data-retention.md)
+- [development dependency advisories](docs/operations/development-dependency-advisories.md)
+- [production checklist](docs/operations/production-checklist.md)
+
+All current rate limiters and duplicate windows are in-memory and per API process. This includes
+public incident submission (5 per IP per 15 minutes plus a 5-minute duplicate window), staff login
+(5 per IP per 15 minutes plus account lockout), contact access (10 per staff member per 15
+minutes), staff notes (30 per staff member per 15 minutes), attachment review (20 per staff member
+per 15 minutes), and editorial/institutional mutations (60 per staff member per 15 minutes).
+Restarting a process clears these maps, and multiple replicas do not share them. Horizontal
+deployment therefore requires an approved shared store and reviewed client-IP proxy topology.
+
+The API emits request IDs and production JSON request logs containing only method, path (without
+query), status, and duration. It does not intentionally log bodies, query values, cookies,
+authorization headers, incident content, contacts, notes, filenames, object keys, hashes, storage
+paths, encryption keys, or database credentials. Operators must keep platform/proxy logging rules
+equally restrictive.
+
+No production Dockerfile is currently committed, so container-image build validation is not
+claimed. `.dockerignore` is ready for a future reviewed image definition and excludes secrets,
+private evidence, dumps, logs, dependencies, and build output.
+
+CI gates the deployable dependency graph with `pnpm audit --prod`. The full development graph must
+also be reviewed for every release; development-only advisories are not automatically forced
+across incompatible major versions because doing so can invalidate lint/test tooling.
 
 ## Institutional content management
 
