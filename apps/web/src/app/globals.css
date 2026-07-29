@@ -1856,3 +1856,50 @@ h3 {
   color: var(--text-secondary, #4d5964);
   font-size: 0.925rem;
 }
+
+.faq-item summary {
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.faq-item[open] summary {
+  margin-bottom: 0.75rem;
+}
+
+.admin-content-editor {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-content-editor fieldset,
+.admin-section-editor {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 0.0625rem solid var(--color-border);
+  border-radius: var(--radius-small);
+}
+
+.admin-content-editor label,
+.admin-detail-card > label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 800;
+}
+
+.admin-content-editor input,
+.admin-content-editor textarea,
+.admin-detail-card > label textarea {
+  width: 100%;
+  padding: 0.65rem;
+  border: 0.1rem solid #aeb9b1;
+  border-radius: var(--radius-small);
+}
+
+.admin-content-editor textarea,
+.admin-detail-card > label textarea {
+  min-height: 7rem;
+  resize: vertical;
+}

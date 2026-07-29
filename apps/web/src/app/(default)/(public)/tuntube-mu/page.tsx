@@ -1,8 +1,5 @@
-import { ContactPage } from '@/components/public/informational-pages';
-import { createPublicMetadata } from '@/lib/public-metadata';
-
-export const metadata = createPublicMetadata('ha', 'contact');
+import { permanentRedirect } from 'next/navigation';
 
 export default function HausaContactPage() {
-  return <ContactPage locale="ha" />;
+  permanentRedirect('/contact');
 }

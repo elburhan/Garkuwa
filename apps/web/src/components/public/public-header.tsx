@@ -15,6 +15,7 @@ export function PublicHeader({ locale }: Readonly<{ locale: Locale }>) {
     { href: getPublicPath(locale, 'help'), label: messages.navigation.help },
     { href: getPublicPath(locale, 'about'), label: messages.navigation.about },
     { href: getPublicPath(locale, 'contact'), label: messages.navigation.contact },
+    { href: getPublicPath(locale, 'safety'), label: messages.navigation.safety },
     {
       href: getPublicPath(locale, 'reportIncident'),
       label: messages.navigation.reportIncident,

@@ -141,6 +141,11 @@ export function AdminOperationsDashboard({
             {messages.news.management}
           </Link>
         ) : null}
+        {principal.role !== 'ANALYST' ? (
+          <Link className="button button-secondary" href={`/admin/content?lang=${locale}`}>
+            {getMessages(locale).institutionalContent.admin.title}
+          </Link>
+        ) : null}
         <AdminLogoutButton locale={locale} apiBaseUrl={apiBaseUrl} />
       </div>
 
