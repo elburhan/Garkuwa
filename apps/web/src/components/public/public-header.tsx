@@ -10,6 +10,7 @@ export function PublicHeader({ locale }: Readonly<{ locale: Locale }>) {
   const messages = getMessages(locale);
   const items: PublicNavigationItem[] = [
     { href: getPublicPath(locale, 'home'), label: messages.navigation.home },
+    { href: getPublicPath(locale, 'news'), label: messages.navigation.news },
     { href: getPublicPath(locale, 'faq'), label: messages.navigation.faq },
     { href: getPublicPath(locale, 'help'), label: messages.navigation.help },
     { href: getPublicPath(locale, 'about'), label: messages.navigation.about },

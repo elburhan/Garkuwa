@@ -4,6 +4,8 @@ import { getMessages, getPublicPath, type Locale, type PublicPageKey } from '@/i
 
 import { webEnvironment } from './env';
 
+type StaticPublicPageKey = Exclude<PublicPageKey, 'news'>;
+
 const metadataKeys = {
   home: { title: 'homeTitle', description: 'homeDescription' },
   faq: { title: 'faqTitle', description: 'faqDescription' },
@@ -15,14 +17,14 @@ const metadataKeys = {
     description: 'reportIncidentDescription',
   },
 } as const satisfies Record<
-  PublicPageKey,
+  StaticPublicPageKey,
   {
     title: keyof ReturnType<typeof getMessages>['metadata'];
     description: keyof ReturnType<typeof getMessages>['metadata'];
   }
 >;
 
-export function createPublicMetadata(locale: Locale, page: PublicPageKey): Metadata {
+export function createPublicMetadata(locale: Locale, page: StaticPublicPageKey): Metadata {
   const messages = getMessages(locale);
   const keys = metadataKeys[page];
   const localizedPath = getPublicPath(locale, page);

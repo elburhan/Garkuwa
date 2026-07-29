@@ -39,4 +39,5 @@ export const requiredMessageNamespaces = [
   'featureStatus',
   'metadata',
   'public',
+  'publicNews',
 ] as const satisfies readonly (keyof Messages)[];

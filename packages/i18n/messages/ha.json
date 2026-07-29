@@ -10,6 +10,7 @@
   "navigation": {
     "label": "Babban menu",
     "home": "Shafin farko",
+    "news": "Labarai da sanarwa",
     "faq": "Tambayoyin da ake yawan yi",
     "help": "Taimako",
     "about": "Game da mu",
@@ -21,13 +22,13 @@
   "homepage": {
     "eyebrow": "Dandali mai amfani da Hausa a gaba",
     "title": "Tabbatattun bayanan jama'a da bayar da rahoto cikin sirri",
-    "introduction": "Ana gina Dandalin Garkuwa domin tallafa wa samun tabbatattun labarai da sanarwar jama'a, tare da wata hanya ta daban ta aika rahoton wani lamari cikin sirri. Fom ɗin rahoto yana samuwa yanzu; aikin labarai yana nan tafe.",
+    "introduction": "Dandalin Garkuwa yana gabatar da tabbatattun labarai da sanarwar jama'a, tare da wata hanya ta daban ta aika rahoton wani lamari cikin sirri.",
     "primaryAction": "Bayar da rahoto",
     "secondaryAction": "Duba tambayoyi da amsoshi",
-    "pillarsTitle": "Ayyuka biyu da ake shirin samarwa",
+    "pillarsTitle": "Ayyukan jama'a guda biyu",
     "pillarsIntroduction": "Za a ware bayanan da ake wallafawa ga jama'a daga rahotannin sirri da ma'aikata za su duba.",
     "newsTitle": "Tabbatattun labarai da sanarwa",
-    "newsDescription": "Za a wallafa sanarwa, shawarwari, gargaɗi da sabbin bayanan jama'a bayan an bi tsarin tantancewa.",
+    "newsDescription": "Karanta sanarwa, shawarwari, gargaɗi da sabbin bayanan jama'a da aka wallafa bayan tantancewar cikin gida.",
     "reportingTitle": "Rahoton wani lamari cikin sirri",
     "reportingDescription": "Ana samun fom na musamman domin jama'a su aika bayanin wani lamari ba tare da buƙatar asusu ba.",
     "trustTitle": "Yadda aka tsara tsarin amana",
@@ -45,6 +46,30 @@
     "stepThreeDescription": "Ma'aikatan cikin gida za su duba bayanin ta tsarin gudanarwa su ɗauki matakin da ya dace.",
     "linksTitle": "Ƙarin bayani",
     "linksDescription": "Karanta yadda aka tsara dandalin, abin da ake iya tsammani, da hanyoyin neman taimako."
+  },
+  "publicNews": {
+    "eyebrow": "Bayanan jama'a",
+    "title": "Tabbatattun labarai da sanarwa",
+    "introduction": "Karanta sabbin bayanan jama'a da suka kammala matakan tantancewa na Gidauniyar.",
+    "readArticle": "Karanta cikakken labari",
+    "publishedOn": "An wallafa ranar",
+    "backToNews": "Koma labarai da sanarwa",
+    "empty": "Babu labarin da aka wallafa a yanzu.",
+    "unavailable": "Ba a iya kawo labarai a yanzu. A sake gwadawa daga baya.",
+    "previousPage": "Shafin baya",
+    "nextPage": "Shafi na gaba",
+    "pageNumber": "Shafi na {page}",
+    "paginationLabel": "Shafukan labarai",
+    "languageLabel": "Harshen labari",
+    "hausaVersion": "Rubutun Hausa",
+    "englishVersion": "Rubutun Turanci",
+    "englishUnavailable": "Ba a samar da cikakken fassarar Turanci ga wannan labarin ba.",
+    "recentTitle": "Sabbin bayanan jama'a",
+    "recentIntroduction": "Sabbin tabbatattun labarai da sanarwa.",
+    "viewAll": "Duba dukkan labarai",
+    "notice": "Bayanan da ake wallafawa sun bambanta da rahotannin sirri na jama'a.",
+    "listMetadataTitle": "Tabbatattun labarai da sanarwa",
+    "listMetadataDescription": "Labarai, sanarwa, shawarwari da sabbin bayanan jama'a da Gidauniyar Garkuwa ta wallafa."
   },
   "faq": {
     "eyebrow": "Bayani a taƙaice",
@@ -89,7 +114,7 @@
       },
       {
         "question": "Shin labarai da fom ɗin rahoto sun fara aiki?",
-        "answer": "Fom ɗin bayar da rahoto yana samuwa yanzu. Aikin tabbatattun labarai da sanarwa yana nan tafe."
+        "answer": "Fom ɗin bayar da rahoto da sashen labaran da aka wallafa suna samuwa. Sabon labari na iya ɗaukar ɗan lokaci kafin ya bayyana saboda takaitaccen tsarin ma'ajiyar shafukan jama'a."
       }
     ]
   },
@@ -100,7 +125,7 @@
     "sections": [
       {
         "title": "Amfani da shafin jama'a",
-        "body": "Yi amfani da babban menu domin komawa shafin farko ko zuwa fom ɗin rahoto, tambayoyi, taimako, bayani da tuntuɓa. Aikin tabbatattun labarai yana nan tafe."
+        "body": "Yi amfani da babban menu domin zuwa labaran da aka wallafa, fom ɗin rahoto, tambayoyi, taimako, bayani da tuntuɓa."
       },
       {
         "title": "Sauya harshe",
@@ -182,7 +207,7 @@
   "featureStatus": {
     "comingSoon": "Ana nan tafe",
     "available": "Yana samuwa",
-    "notActive": "Fom ɗin rahoto yana samuwa; aikin tabbatattun labarai yana nan tafe."
+    "notActive": "Tabbatattun labaran jama'a da rahoto cikin sirri suna samuwa."
   },
   "metadata": {
     "homeTitle": "Dandalin Garkuwa",

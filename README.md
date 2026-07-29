@@ -435,14 +435,47 @@ title, summary, and body must be supplied together. Slugs are generated once fro
 transliterating Hausa Latin letters and adding a bounded numeric suffix for collisions. Slugs stay
 stable when draft titles change.
 
-`PUBLISHED` currently means editorially approved for future public delivery. No public news route,
-RSS feed, sitemap entry, public cache, or homepage news card exists yet. This foundation also has no
-rich-text/HTML storage, Markdown rendering, cover-image upload, scheduled publication, article
-deletion, autosave, analytics, notification, or AI writing/translation feature.
+`PUBLISHED` means editorially approved for public delivery. The read-only public delivery rules are
+described below. This foundation has no rich-text/HTML storage, Markdown rendering, cover-image
+upload, scheduled publication, article deletion, autosave, analytics, notification, or AI
+writing/translation feature.
 
 Editorial mutations use the existing trusted-origin protection and a per-instance in-memory limit
 of 60 attempts per staff user per 15 minutes. A shared limiter store would be required for multiple
 API replicas. This internal foundation is not a claim of production readiness.
+
+## Public news delivery
+
+Published public information is available at the canonical Hausa routes `/news` and
+`/news/:slug`. Complete English translations are available at `/en/news` and
+`/en/news/:slug`; there is no `/ha/news` route and English never falls back to Hausa. The
+homepages show up to three recent articles while retaining the incident-reporting call to action.
+
+The unauthenticated, read-only API endpoints are:
+
+- `GET /api/public/news?lang=ha&page=1&pageSize=10`
+- `GET /api/public/news/:slug?lang=ha`
+
+`lang` accepts only `ha` or `en`. Pagination defaults to 10 items and is capped at 30. Results
+are ordered by `publishedAt` descending and then stable slug order. API queries directly require
+`status = PUBLISHED`, a non-null publication timestamp no later than the current server time,
+and—for English responses—all three English fields. Draft, in-review, archived, future-dated,
+missing-date, incomplete-translation, and unknown records share the same public not-found
+behavior. No internal article ID, staff identity, editorial history, workflow reason, or internal
+timestamp is selected or returned.
+
+Successful public news responses use
+`Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=60`; Next.js requests
+revalidate after 60 seconds. Consequently a newly published or archived article may take up to
+the active cache interval to appear or disappear. Admin editorial responses remain
+`private, no-store`, and public 404 responses are not assigned the successful-response cache
+header.
+
+Public pages render plain text with preserved paragraphs and localized publication dates. There
+are no author pages, public previews, search, categories, tags, comments, reactions, view
+counters, related-content recommendations, RSS, sitemap, social cards, cover images, scheduled
+publication, analytics, or public mutations. This remains an incremental delivery slice, not a
+production-readiness claim.
 
 ## Environment variables
 
@@ -528,7 +561,7 @@ submission, secure staff authentication, controlled incident workflow, and restr
 contact access and internal staff notes described above. It intentionally does **not** implement
 public tracking, reporter accounts, bulk contact reveal, contact export, arbitrary incident editing or
 deletion, media uploads, device-location
-access, maps, production category management, public news delivery, editorial analytics,
+access, maps, production category management, editorial analytics,
 object storage, notifications, Redis, queues, outbox events, audit-log business logic, Kubernetes,
 microservices, or Kafka. The platform remains an incremental foundation and is not a claim of
 production readiness.
