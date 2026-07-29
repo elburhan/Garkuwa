@@ -12,6 +12,7 @@ const metadataKeys = {
   help: { title: 'helpTitle', description: 'helpDescription' },
   about: { title: 'aboutTitle', description: 'aboutDescription' },
   contact: { title: 'contactTitle', description: 'contactDescription' },
+  safety: { title: 'safetyTitle', description: 'safetyDescription' },
   reportIncident: {
     title: 'reportIncidentTitle',
     description: 'reportIncidentDescription',

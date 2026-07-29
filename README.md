@@ -620,3 +620,36 @@ access, maps, production category management, editorial analytics,
 object storage, notifications, Redis, queues, outbox events, audit-log business logic, Kubernetes,
 microservices, or Kafka. The platform remains an incremental foundation and is not a claim of
 production readiness.
+
+## Institutional content management
+
+Five institutional pages are controlled by the platform: `ABOUT`, `FAQ`, `HELP`, `CONTACT`,
+and `SAFETY_GUIDANCE`. Staff cannot create, rename, or delete pages. Hausa is canonical and
+required; English is public only when the entire revision is complete.
+
+Public routes are `/about`, `/faq`, `/help`, `/contact`, and `/safety`, with English equivalents
+under `/en`. The former Hausa routes `/game-da-mu`, `/taimako`, and `/tuntube-mu` remain as
+permanent redirects. Successful public page API responses use
+`public, max-age=60, s-maxage=300, stale-while-revalidate=60`, so publication can take up to the
+bounded cache interval to appear.
+
+Authenticated management uses `/admin/content` and `/admin/content/:pageKey`. API routes are:
+
+- `GET /api/admin/institutional-pages`
+- `GET /api/admin/institutional-pages/:pageKey`
+- `PATCH /api/admin/institutional-pages/:pageKey/draft`
+- `PATCH /api/admin/institutional-pages/:pageKey/status`
+- `GET /api/admin/institutional-pages/:pageKey/revisions`
+- `GET /api/admin/institutional-pages/:pageKey/history`
+- `GET /api/public/institutional-pages/:pageKey?lang=ha|en`
+
+`SUPER_ADMIN`, `ADMIN`, `EDITOR`, and `MODERATOR` may view. Editors and administrators may save
+immutable drafts and submit them for review; moderators and administrators may return content
+with a reason; only `SUPER_ADMIN` and `ADMIN` may publish. Mutations require a staff session,
+trusted Origin, strict JSON, a per-instance staff mutation limit, and `expectedUpdatedAt`
+optimistic concurrency. The previous published revision stays public during editing and review.
+
+The additive migration imports the existing source-controlled About, FAQ, Help, Contact, and
+general safety wording. This is not a general CMS: it has no arbitrary pages, deletion, rich
+text, HTML, images, scheduling, unpublish, rollback, analytics, autosave, browser draft storage,
+or collaborative editing.

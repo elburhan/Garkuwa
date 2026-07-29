@@ -74,6 +74,20 @@ enum SecurityAdvisorySeverity {
   INFORMATIONAL
 }
 
+enum InstitutionalPageKey {
+  ABOUT
+  FAQ
+  HELP
+  CONTACT
+  SAFETY_GUIDANCE
+}
+
+enum InstitutionalPageWorkflowStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+}
+
 model User {
   id                  String     @id @default(uuid()) @db.Uuid
   /// Must be stored in normalized lowercase form by the future identity service.
@@ -89,20 +103,22 @@ model User {
   createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  assignedIncidents     Incident[]                         @relation("IncidentAssignee")
-  incidentStatusChanges IncidentStatusHistory[]            @relation("IncidentStatusChangedBy")
-  assignmentsFrom       IncidentAssignmentHistory[]        @relation("IncidentAssignmentFromUser")
-  assignmentsTo         IncidentAssignmentHistory[]        @relation("IncidentAssignmentToUser")
-  assignmentChanges     IncidentAssignmentHistory[]        @relation("IncidentAssignmentChangedBy")
-  contactAccesses       IncidentContactAccessHistory[]
-  authoredIncidentNotes IncidentStaffNote[]                @relation("IncidentStaffNoteAuthor")
-  deletedIncidentNotes  IncidentStaffNote[]                @relation("IncidentStaffNoteDeletedBy")
-  noteRevisionChanges   IncidentStaffNoteRevision[]        @relation("IncidentStaffNoteRevisionChangedBy")
-  attachmentAccesses    IncidentAttachmentAccessHistory[]
-  attachmentReviews     IncidentAttachmentSecurityReview[]
-  authoredNewsArticles  NewsArticle[]                      @relation("NewsArticleAuthor")
-  newsStatusChanges     NewsArticleStatusHistory[]         @relation("NewsArticleStatusActor")
-  sessions              StaffSession[]
+  assignedIncidents      Incident[]                         @relation("IncidentAssignee")
+  incidentStatusChanges  IncidentStatusHistory[]            @relation("IncidentStatusChangedBy")
+  assignmentsFrom        IncidentAssignmentHistory[]        @relation("IncidentAssignmentFromUser")
+  assignmentsTo          IncidentAssignmentHistory[]        @relation("IncidentAssignmentToUser")
+  assignmentChanges      IncidentAssignmentHistory[]        @relation("IncidentAssignmentChangedBy")
+  contactAccesses        IncidentContactAccessHistory[]
+  authoredIncidentNotes  IncidentStaffNote[]                @relation("IncidentStaffNoteAuthor")
+  deletedIncidentNotes   IncidentStaffNote[]                @relation("IncidentStaffNoteDeletedBy")
+  noteRevisionChanges    IncidentStaffNoteRevision[]        @relation("IncidentStaffNoteRevisionChangedBy")
+  attachmentAccesses     IncidentAttachmentAccessHistory[]
+  attachmentReviews      IncidentAttachmentSecurityReview[]
+  authoredNewsArticles   NewsArticle[]                      @relation("NewsArticleAuthor")
+  newsStatusChanges      NewsArticleStatusHistory[]         @relation("NewsArticleStatusActor")
+  institutionalRevisions InstitutionalPageRevision[]        @relation("InstitutionalRevisionCreator")
+  institutionalChanges   InstitutionalPageWorkflowHistory[] @relation("InstitutionalWorkflowActor")
+  sessions               StaffSession[]
 
   @@index([role, status])
   @@map("staff_users")
@@ -145,9 +161,9 @@ model NewsArticle {
   publishedAt          DateTime?         @map("published_at") @db.Timestamptz(3)
   archivedAt           DateTime?         @map("archived_at") @db.Timestamptz(3)
 
-  author        User                       @relation("NewsArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict)
-  category      NewsCategory               @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  statusHistory NewsArticleStatusHistory[]
+  author           User                       @relation("NewsArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  category         NewsCategory               @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  statusHistory    NewsArticleStatusHistory[]
   securityAdvisory NewsSecurityAdvisory?
 
   @@index([status, updatedAt])
@@ -192,6 +208,69 @@ model NewsArticleStatusHistory {
   @@index([articleId, createdAt])
   @@index([actorId, createdAt])
   @@map("news_article_status_history")
+}
+
+model InstitutionalPage {
+  id                  String                          @id @default(uuid()) @db.Uuid
+  key                 InstitutionalPageKey            @unique
+  draftRevisionId     String?                         @unique @map("draft_revision_id") @db.Uuid
+  publishedRevisionId String?                         @unique @map("published_revision_id") @db.Uuid
+  workflowStatus      InstitutionalPageWorkflowStatus @default(PUBLISHED) @map("workflow_status")
+  createdAt           DateTime                        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime                        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  publishedAt         DateTime?                       @map("published_at") @db.Timestamptz(3)
+
+  revisions         InstitutionalPageRevision[]        @relation("InstitutionalPageRevisions")
+  draftRevision     InstitutionalPageRevision?         @relation("InstitutionalPageDraftRevision", fields: [draftRevisionId], references: [id], onDelete: Restrict)
+  publishedRevision InstitutionalPageRevision?         @relation("InstitutionalPagePublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: Restrict)
+  workflowHistory   InstitutionalPageWorkflowHistory[]
+
+  @@index([workflowStatus, updatedAt])
+  @@map("institutional_pages")
+}
+
+model InstitutionalPageRevision {
+  id           String   @id @default(uuid()) @db.Uuid
+  pageId       String   @map("page_id") @db.Uuid
+  version      Int
+  titleHa      String   @map("title_ha") @db.VarChar(180)
+  summaryHa    String?  @map("summary_ha") @db.VarChar(500)
+  titleEn      String?  @map("title_en") @db.VarChar(180)
+  summaryEn    String?  @map("summary_en") @db.VarChar(500)
+  sectionsJson Json     @map("sections_json")
+  createdById  String?  @map("created_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  page             InstitutionalPage                  @relation("InstitutionalPageRevisions", fields: [pageId], references: [id], onDelete: Cascade)
+  createdBy        User?                              @relation("InstitutionalRevisionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  draftForPage     InstitutionalPage?                 @relation("InstitutionalPageDraftRevision")
+  publishedForPage InstitutionalPage?                 @relation("InstitutionalPagePublishedRevision")
+  workflowHistory  InstitutionalPageWorkflowHistory[]
+
+  @@unique([pageId, version])
+  @@index([pageId, createdAt])
+  @@index([createdById, createdAt])
+  @@map("institutional_page_revisions")
+}
+
+model InstitutionalPageWorkflowHistory {
+  id         String                           @id @default(uuid()) @db.Uuid
+  pageId     String                           @map("page_id") @db.Uuid
+  revisionId String                           @map("revision_id") @db.Uuid
+  fromStatus InstitutionalPageWorkflowStatus? @map("from_status")
+  toStatus   InstitutionalPageWorkflowStatus  @map("to_status")
+  actorId    String?                          @map("actor_id") @db.Uuid
+  reason     String?                          @db.VarChar(1000)
+  createdAt  DateTime                         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  page     InstitutionalPage         @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  revision InstitutionalPageRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  actor    User?                     @relation("InstitutionalWorkflowActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([pageId, createdAt])
+  @@index([revisionId])
+  @@index([actorId, createdAt])
+  @@map("institutional_page_workflow_history")
 }
 
 model StaffSession {
