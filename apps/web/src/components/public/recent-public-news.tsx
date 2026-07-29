@@ -21,6 +21,7 @@ export function RecentPublicNews({
         <div className="recent-news-grid">
           {items.slice(0, 3).map((article) => (
             <article className="public-news-card" key={article.slug}>
+              <p className="category-label">{article.category.name}</p>
               <p className="publication-date">
                 <time dateTime={article.publishedAt}>
                   {new Intl.DateTimeFormat(dateLocale, { dateStyle: 'long' }).format(

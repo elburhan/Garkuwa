@@ -17,6 +17,9 @@ export function PublicNewsArticle({
     <article className="content-width section-spacing public-news-article">
       <header className="content-narrow">
         <p className="eyebrow">{copy.eyebrow}</p>
+        <p className="category-label">
+          {copy.categoryLabel}: {article.category.name}
+        </p>
         <h1>{article.title}</h1>
         <p className="publication-date">
           {copy.publishedOn}{' '}

@@ -18,10 +18,15 @@ const completeEnglishTranslation: Prisma.NewsArticleWhereInput = {
   ],
 };
 
-function visibilityWhere(language: PublicNewsLanguage, now: Date): Prisma.NewsArticleWhereInput {
+function visibilityWhere(
+  language: PublicNewsLanguage,
+  now: Date,
+  categorySlug?: string,
+): Prisma.NewsArticleWhereInput {
   return {
     status: NewsArticleStatus.PUBLISHED,
     publishedAt: { not: null, lte: now },
+    category: { isActive: true, ...(categorySlug ? { slug: categorySlug } : {}) },
     ...(language === 'en' ? completeEnglishTranslation : {}),
   };
 }
@@ -38,7 +43,9 @@ export class PublicNewsService {
   ) {}
 
   async list(query: PublicNewsQuery) {
-    const where = visibilityWhere(query.lang, new Date(this.clock()));
+    const generatedAt = new Date(this.clock());
+    const where = visibilityWhere(query.lang, generatedAt, query.category);
+    const category = { select: { slug: true, nameHa: true, nameEn: true } } as const;
     const select =
       query.lang === 'en'
         ? {
@@ -46,6 +53,7 @@ export class PublicNewsService {
             titleEn: true,
             summaryEn: true,
             publishedAt: true,
+            category,
           }
         : {
             slug: true,
@@ -55,6 +63,7 @@ export class PublicNewsService {
             titleEn: true,
             summaryEn: true,
             bodyEn: true,
+            category,
           };
     const [totalItems, articles] = await this.prisma.$transaction([
       this.prisma.newsArticle.count({ where }),
@@ -75,6 +84,7 @@ export class PublicNewsService {
             summary: article.summaryEn!,
             publishedAt: article.publishedAt!.toISOString(),
             hasEnglishTranslation: true,
+            category: { slug: article.category.slug, name: article.category.nameEn },
           }
         : {
             slug: article.slug,
@@ -82,10 +92,12 @@ export class PublicNewsService {
             summary: article.summaryHa,
             publishedAt: article.publishedAt!.toISOString(),
             hasEnglishTranslation: Boolean(article.titleEn && article.summaryEn && article.bodyEn),
+            category: { slug: article.category.slug, name: article.category.nameHa },
           },
     );
 
     return {
+      generatedAt: generatedAt.toISOString(),
       items,
       pagination: {
         page: query.page,
@@ -110,6 +122,7 @@ export class PublicNewsService {
           summaryEn: true,
           bodyEn: true,
           publishedAt: true,
+          category: { select: { slug: true, nameEn: true } },
         },
       });
       if (!article?.publishedAt) throw publicNotFound();
@@ -120,6 +133,7 @@ export class PublicNewsService {
         body: article.bodyEn!,
         publishedAt: article.publishedAt.toISOString(),
         hasEnglishTranslation: true,
+        category: { slug: article.category.slug, name: article.category.nameEn },
       };
     }
 
@@ -134,6 +148,7 @@ export class PublicNewsService {
         titleEn: true,
         summaryEn: true,
         bodyEn: true,
+        category: { select: { slug: true, nameHa: true } },
       },
     });
     if (!article?.publishedAt) throw publicNotFound();
@@ -144,6 +159,7 @@ export class PublicNewsService {
       body: article.bodyHa,
       publishedAt: article.publishedAt.toISOString(),
       hasEnglishTranslation: Boolean(article.titleEn && article.summaryEn && article.bodyEn),
+      category: { slug: article.category.slug, name: article.category.nameHa },
     };
   }
 }

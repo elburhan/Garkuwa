@@ -4,7 +4,7 @@ import { getMessages, getPublicPath, type Locale, type PublicPageKey } from '@/i
 
 import { webEnvironment } from './env';
 
-type StaticPublicPageKey = Exclude<PublicPageKey, 'news'>;
+type StaticPublicPageKey = Exclude<PublicPageKey, 'news' | 'liveNews'>;
 
 const metadataKeys = {
   home: { title: 'homeTitle', description: 'homeDescription' },

@@ -6,6 +6,7 @@ import { AdminNewsForm } from '@/components/admin/admin-news-form';
 import type { Locale } from '@/i18n';
 import { getMessages } from '@/i18n';
 import { getAdminPrincipal } from '@/lib/admin-auth';
+import { loadNewsCategories } from '@/lib/admin-news-api';
 
 export const metadata: Metadata = { title: 'Sabon daftarin labari | Gidauniyar Garkuwa' };
 const creatorRoles = new Set(['SUPER_ADMIN', 'ADMIN', 'EDITOR']);
@@ -25,13 +26,22 @@ export default async function NewNewsArticlePage({
       </main>
     );
   }
+  const categories = await loadNewsCategories();
+  if (categories.kind !== 'success') {
+    return (
+      <main className="admin-content content-width section-spacing" lang={locale}>
+        <h1>{messages.newDraft}</h1>
+        <p role="alert">{messages.categoryUnavailable}</p>
+      </main>
+    );
+  }
   return (
     <main className="admin-content content-width section-spacing" lang={locale}>
       <Link href={`/admin/news${locale === 'en' ? '?lang=en' : ''}`}>
         {messages.backToArticles}
       </Link>
       <h1>{messages.newDraft}</h1>
-      <AdminNewsForm locale={locale} />
+      <AdminNewsForm locale={locale} categories={categories.data.items} />
     </main>
   );
 }

@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { getMessages, type Locale } from '@/i18n';
 import type { AdminPrincipal } from '@/lib/admin-auth';
-import type { NewsArticle, NewsHistory } from '@/lib/admin-news-api';
+import type { NewsArticle, NewsCategories, NewsHistory } from '@/lib/admin-news-api';
 
 import { AdminNewsForm } from './admin-news-form';
 import { AdminNewsWorkflow } from './admin-news-workflow';
@@ -12,11 +12,13 @@ export function AdminNewsDetail({
   principal,
   article,
   history,
+  categories,
 }: Readonly<{
   locale: Locale;
   principal: AdminPrincipal;
   article: NewsArticle;
   history: NewsHistory['items'];
+  categories: NewsCategories['items'];
 }>) {
   const messages = getMessages(locale).admin.news;
   const dates = new Intl.DateTimeFormat(locale === 'ha' ? 'ha-NG' : 'en-NG', {
@@ -35,6 +37,10 @@ export function AdminNewsDetail({
         <Link href={`/admin/news${lang}`}>{messages.backToArticles}</Link>
       </nav>
       <header className="admin-landing-header">
+        <div>
+          <dt>{messages.category}</dt>
+          <dd>{locale === 'ha' ? article.category.nameHa : article.category.nameEn}</dd>
+        </div>
         <div>
           <p className="eyebrow">{messages.status[article.status]}</p>
           <h1>{article.titleHa}</h1>
@@ -61,7 +67,7 @@ export function AdminNewsDetail({
       {canEdit ? (
         <section aria-labelledby="edit-news-title">
           <h2 id="edit-news-title">{messages.editDraft}</h2>
-          <AdminNewsForm locale={locale} article={article} />
+          <AdminNewsForm locale={locale} article={article} categories={categories} />
         </section>
       ) : (
         <>

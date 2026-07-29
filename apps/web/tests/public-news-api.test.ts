@@ -19,6 +19,7 @@ const item = {
   summary: 'Taƙaitaccen bayanin sanarwar jama’a.',
   publishedAt: '2026-07-29T10:00:00.000Z',
   hasEnglishTranslation: true,
+  category: { slug: 'news', name: 'Labarai' },
 };
 
 describe('public news API client', () => {
@@ -34,6 +35,7 @@ describe('public news API client', () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(
         JSON.stringify({
+          generatedAt: '2026-07-29T12:00:00.000Z',
           items: [item],
           pagination: { page: 2, pageSize: 3, totalItems: 4, totalPages: 2 },
         }),
@@ -43,6 +45,7 @@ describe('public news API client', () => {
     await expect(loadPublicNews('en', { page: 2, pageSize: 3, fetcher })).resolves.toEqual({
       kind: 'success',
       data: {
+        generatedAt: '2026-07-29T12:00:00.000Z',
         items: [item],
         pagination: { page: 2, pageSize: 3, totalItems: 4, totalPages: 2 },
       },

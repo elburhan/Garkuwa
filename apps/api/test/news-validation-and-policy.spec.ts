@@ -14,6 +14,7 @@ import {
 import { createNewsSlugBase, newsSlugCandidate } from '../src/modules/news/news-slug.js';
 
 const content = {
+  categoryCode: 'NEWS' as const,
   titleHa: 'Sanarwar Tsaro ta Gidauniyar Garkuwa',
   summaryHa: 'Wannan taƙaitaccen bayani ne na gwaji domin tabbatar da ingancin tsarin.',
   bodyHa: `Sakin layi na farko yana ɗauke da cikakken bayanin gwaji. ${'Bayani '.repeat(10)}
@@ -61,6 +62,29 @@ describe('news validation and editorial policy', () => {
     ).toBe('English editorial title');
     expect(() => createNewsArticleSchema.parse({ ...content, status: 'PUBLISHED' })).toThrow();
     expect(() => updateNewsArticleSchema.parse(content)).toThrow();
+  });
+
+  it('requires a controlled category and applies the shorter Live Update limits', () => {
+    expect(() => createNewsArticleSchema.parse({ ...content, categoryCode: undefined })).toThrow();
+    expect(() => createNewsArticleSchema.parse({ ...content, categoryCode: 'OTHER' })).toThrow();
+    expect(
+      createNewsArticleSchema.parse({
+        ...content,
+        categoryCode: 'LIVE_UPDATES',
+        summaryHa: 'Takaitaccen bayani na lokaci.',
+        bodyHa: 'Wannan gajeren bayani ne mai muhimmancin lokaci.',
+      }).categoryCode,
+    ).toBe('LIVE_UPDATES');
+    expect(() =>
+      createNewsArticleSchema.parse({
+        ...content,
+        categoryCode: 'LIVE_UPDATES',
+        bodyHa: 'Bayani '.repeat(200),
+      }),
+    ).toThrow();
+    expect(() =>
+      createNewsArticleSchema.parse({ ...content, categoryCode: 'NEWS', bodyHa: 'Gajere.' }),
+    ).toThrow();
   });
 
   it('requires a bounded return reason and expected timestamp', () => {

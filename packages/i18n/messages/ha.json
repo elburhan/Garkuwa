@@ -69,7 +69,18 @@
     "viewAll": "Duba dukkan labarai",
     "notice": "Bayanan da ake wallafawa sun bambanta da rahotannin sirri na jama'a.",
     "listMetadataTitle": "Tabbatattun labarai da sanarwa",
-    "listMetadataDescription": "Labarai, sanarwa, shawarwari da sabbin bayanan jama'a da Gidauniyar Garkuwa ta wallafa."
+    "listMetadataDescription": "Labarai, sanarwa, shawarwari da sabbin bayanan jama'a da Gidauniyar Garkuwa ta wallafa.",
+    "categoryLabel": "Rukuni",
+    "liveUpdates": "Sabuntawa na Kai Tsaye",
+    "latestLiveUpdates": "Sabbin Sabuntawa na Kai Tsaye",
+    "liveUpdatesIntroduction": "Gajerun bayanai na gaskiya masu muhimmancin lokaci da suka kammala tantancewar edita. Wannan shafi ba ya janyo sabbin bayanai kai tsaye.",
+    "seeAllLiveUpdates": "Duba duk Sabuntawa na Kai Tsaye",
+    "noLiveUpdates": "Babu Sabuntawa na Kai Tsaye a yanzu.",
+    "updatedJustNow": "An sabunta yanzu",
+    "updatedOneMinuteAgo": "An sabunta minti ɗaya da ya wuce",
+    "updatedMinutesAgo": "An sabunta mintuna {count} da suka wuce",
+    "updatedOneHourAgo": "An sabunta awa ɗaya da ta wuce",
+    "updatedHoursAgo": "An sabunta awanni {count} da suka wuce"
   },
   "faq": {
     "eyebrow": "Bayani a taƙaice",
@@ -470,6 +481,13 @@
       "allStatuses": "Dukkan matsayi",
       "applyFilter": "Aiwatar da tacewa",
       "clearFilter": "Goge tacewa",
+      "category": "Rukuni",
+      "selectCategory": "Zaɓi rukuni",
+      "filterCategory": "Tace ta rukuni",
+      "allCategories": "Dukkan rukuni",
+      "categoryDraftOnly": "Ana iya sauya rukuni ne kawai yayin da rubutu yake daftari.",
+      "categoryUnavailable": "Ba a samu jerin rukunin da aka amince da su ba. A sake gwadawa daga baya.",
+      "liveUpdateGuidance": "Rubuta gajeren bayani na gaskiya mai muhimmancin lokaci, cikin sakin layi ɗaya zuwa uku. Har yanzu sai an bi matakan tantancewar edita.",
       "accessDenied": "Matsayinka bai ba ka izinin shiga sashen labaran edita ba.",
       "status": {
         "DRAFT": "Daftari",

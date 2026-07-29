@@ -14,6 +14,7 @@ import { createNewsSlugBase, newsSlugCandidate } from './news-slug.js';
 
 export const NEWS_EDITORIAL_CLOCK = Symbol('NEWS_EDITORIAL_CLOCK');
 const minimalActorSelect = { id: true, displayName: true } as const;
+const categorySelect = { code: true, slug: true, nameHa: true, nameEn: true } as const;
 const articleSelect = {
   id: true,
   slug: true,
@@ -30,6 +31,7 @@ const articleSelect = {
   publishedAt: true,
   archivedAt: true,
   author: { select: minimalActorSelect },
+  category: { select: categorySelect },
 } as const;
 
 function conflict(): ConflictException {
@@ -70,6 +72,7 @@ export class NewsService {
     const where = {
       ...(query.status ? { status: query.status } : {}),
       ...(query.authorId ? { authorId: query.authorId } : {}),
+      ...(query.category ? { category: { code: query.category } } : {}),
     };
     const [totalItems, items] = await this.prisma.$transaction([
       this.prisma.newsArticle.count({ where }),
@@ -84,6 +87,7 @@ export class NewsService {
           createdAt: true,
           updatedAt: true,
           author: { select: minimalActorSelect },
+          category: { select: categorySelect },
         },
         orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
         skip: (query.page - 1) * query.pageSize,
@@ -106,6 +110,15 @@ export class NewsService {
   }
 
   async create(input: CreateNewsArticleDto, actor: StaffPrincipal) {
+    const category = await this.activeCategory(input.categoryCode);
+    const content = {
+      titleHa: input.titleHa,
+      summaryHa: input.summaryHa,
+      bodyHa: input.bodyHa,
+      titleEn: input.titleEn,
+      summaryEn: input.summaryEn,
+      bodyEn: input.bodyEn,
+    };
     const base = createNewsSlugBase(input.titleHa);
     for (let collision = 1; collision <= 100; collision += 1) {
       const slug = newsSlugCandidate(base, collision);
@@ -119,7 +132,8 @@ export class NewsService {
         return await this.prisma.$transaction(async (transaction) => {
           const article = await transaction.newsArticle.create({
             data: {
-              ...input,
+              ...content,
+              categoryId: category.id,
               slug,
               authorId: actor.id,
               status: NewsArticleStatus.DRAFT,
@@ -165,6 +179,7 @@ export class NewsService {
   }
 
   async update(articleId: string, input: UpdateNewsArticleDto, actor: StaffPrincipal) {
+    const category = await this.activeCategory(input.categoryCode);
     return this.prisma.$transaction(async (transaction) => {
       const existing = await transaction.newsArticle.findUnique({
         where: { id: articleId },
@@ -175,13 +190,21 @@ export class NewsService {
         throw new ConflictException('Only draft articles can be edited.');
       }
       assertCanEditDraft(existing.authorId, actor);
-      const { expectedUpdatedAt: expectedUpdatedAtValue, ...content } = input;
+      const expectedUpdatedAtValue = input.expectedUpdatedAt;
+      const content = {
+        titleHa: input.titleHa,
+        summaryHa: input.summaryHa,
+        bodyHa: input.bodyHa,
+        titleEn: input.titleEn,
+        summaryEn: input.summaryEn,
+        bodyEn: input.bodyEn,
+      };
       const expectedUpdatedAt = new Date(expectedUpdatedAtValue);
       if (existing.updatedAt.getTime() !== expectedUpdatedAt.getTime()) throw conflict();
       const updatedAt = nextTimestamp(existing.updatedAt, this.clock);
       const result = await transaction.newsArticle.updateMany({
         where: { id: articleId, status: NewsArticleStatus.DRAFT, updatedAt: expectedUpdatedAt },
-        data: { ...content, updatedAt },
+        data: { ...content, categoryId: category.id, updatedAt },
       });
       if (result.count !== 1) throw conflict();
       const article = await transaction.newsArticle.findUniqueOrThrow({
@@ -196,7 +219,13 @@ export class NewsService {
     return this.prisma.$transaction(async (transaction) => {
       const existing = await transaction.newsArticle.findUnique({
         where: { id: articleId },
-        select: { id: true, authorId: true, status: true, updatedAt: true },
+        select: {
+          id: true,
+          authorId: true,
+          status: true,
+          updatedAt: true,
+          category: { select: { isActive: true } },
+        },
       });
       if (!existing) throw new NotFoundException('Article not found.');
       const targetStatus = assertEditorialDecisionAllowed(
@@ -205,6 +234,12 @@ export class NewsService {
         input.decision,
         actor,
       );
+      if (
+        (input.decision === 'SUBMIT_FOR_REVIEW' || input.decision === 'APPROVE_PUBLICATION') &&
+        !existing.category.isActive
+      ) {
+        throw new ConflictException('The article category is unavailable.');
+      }
       const expectedUpdatedAt = new Date(input.expectedUpdatedAt);
       if (existing.updatedAt.getTime() !== expectedUpdatedAt.getTime()) throw conflict();
       const changedAt = nextTimestamp(existing.updatedAt, this.clock);
@@ -267,5 +302,33 @@ export class NewsService {
     return {
       items: items.map((item) => ({ ...item, createdAt: item.createdAt.toISOString() })),
     };
+  }
+
+  async categories() {
+    const items = await this.prisma.newsCategory.findMany({
+      where: { isActive: true },
+      select: {
+        code: true,
+        slug: true,
+        nameHa: true,
+        nameEn: true,
+        descriptionHa: true,
+        descriptionEn: true,
+        displayOrder: true,
+        isActive: true,
+      },
+      orderBy: [{ displayOrder: 'asc' }, { code: 'asc' }],
+      take: 6,
+    });
+    return { items };
+  }
+
+  private async activeCategory(code: string) {
+    const category = await this.prisma.newsCategory.findFirst({
+      where: { code, isActive: true },
+      select: { id: true },
+    });
+    if (!category) throw new NotFoundException('News category not found or unavailable.');
+    return category;
   }
 }

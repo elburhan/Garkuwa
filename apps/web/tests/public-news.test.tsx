@@ -13,6 +13,7 @@ import type { PublicNewsDetail, PublicNewsList } from '../src/lib/public-news-ap
 
 const publishedAt = '2026-07-29T10:00:00.000Z';
 const list: PublicNewsList = {
+  generatedAt: '2026-07-29T12:00:00.000Z',
   items: [
     {
       slug: 'sanarwar-tsaro',
@@ -20,6 +21,7 @@ const list: PublicNewsList = {
       summary: 'Taƙaitaccen bayanin sanarwar jama’a.',
       publishedAt,
       hasEnglishTranslation: true,
+      category: { slug: 'news', name: 'Labarai' },
     },
   ],
   pagination: { page: 2, pageSize: 10, totalItems: 21, totalPages: 3 },

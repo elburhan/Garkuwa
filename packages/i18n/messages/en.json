@@ -69,7 +69,18 @@
     "viewAll": "View all news",
     "notice": "Published information is separate from confidential incident reports.",
     "listMetadataTitle": "Verified news and announcements",
-    "listMetadataDescription": "Published public news, announcements, advisories and updates from Garkuwa Foundation."
+    "listMetadataDescription": "Published public news, announcements, advisories and updates from Garkuwa Foundation.",
+    "categoryLabel": "Category",
+    "liveUpdates": "Live Updates",
+    "latestLiveUpdates": "Latest Live Updates",
+    "liveUpdatesIntroduction": "Short, factual and time-sensitive updates that have completed editorial review. This page does not stream or poll for new content.",
+    "seeAllLiveUpdates": "See all Live Updates",
+    "noLiveUpdates": "No Live Updates are available at present.",
+    "updatedJustNow": "Updated just now",
+    "updatedOneMinuteAgo": "Updated one minute ago",
+    "updatedMinutesAgo": "Updated {count} minutes ago",
+    "updatedOneHourAgo": "Updated one hour ago",
+    "updatedHoursAgo": "Updated {count} hours ago"
   },
   "faq": {
     "eyebrow": "Essential information",
@@ -470,6 +481,13 @@
       "allStatuses": "All statuses",
       "applyFilter": "Apply filter",
       "clearFilter": "Clear filter",
+      "category": "Category",
+      "selectCategory": "Select a category",
+      "filterCategory": "Filter by category",
+      "allCategories": "All categories",
+      "categoryDraftOnly": "The category can be changed only while the article is a draft.",
+      "categoryUnavailable": "The controlled category list is unavailable. Try again later.",
+      "liveUpdateGuidance": "Keep this factual and time-sensitive: one to three short paragraphs. Live Updates still require editorial approval.",
       "accessDenied": "Your staff role does not permit access to editorial news.",
       "status": {
         "DRAFT": "Draft",

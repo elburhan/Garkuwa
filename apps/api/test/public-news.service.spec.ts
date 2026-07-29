@@ -31,6 +31,7 @@ describe('PublicNewsService', () => {
         titleEn: null,
         summaryEn: null,
         bodyEn: null,
+        category: { slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
       },
     ]);
 
@@ -47,6 +48,7 @@ describe('PublicNewsService', () => {
     });
     expect(call).not.toHaveProperty('include');
     expect(result).toEqual({
+      generatedAt: now.toISOString(),
       items: [
         {
           slug: 'sanarwar-tsaro',
@@ -54,6 +56,7 @@ describe('PublicNewsService', () => {
           summary: 'Taƙaitaccen bayanin sanarwar jama’a.',
           publishedAt: publishedAt.toISOString(),
           hasEnglishTranslation: false,
+          category: { slug: 'news', name: 'Labarai' },
         },
       ],
       pagination: { page: 1, pageSize: 10, totalItems: 1, totalPages: 1 },
@@ -68,6 +71,7 @@ describe('PublicNewsService', () => {
         titleEn: 'Safety notice',
         summaryEn: 'A concise public safety notice.',
         publishedAt,
+        category: { slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
       },
     ]);
 
@@ -85,12 +89,14 @@ describe('PublicNewsService', () => {
         { bodyEn: { not: null } },
       ]),
     );
-    expect(call.select).toEqual({
-      slug: true,
-      titleEn: true,
-      summaryEn: true,
-      publishedAt: true,
-    });
+    expect(call.select).toEqual(
+      expect.objectContaining({
+        slug: true,
+        titleEn: true,
+        summaryEn: true,
+        publishedAt: true,
+      }),
+    );
     expect(call.skip).toBe(3);
     expect(result.items[0]).toEqual({
       slug: 'sanarwar-tsaro',
@@ -98,6 +104,7 @@ describe('PublicNewsService', () => {
       summary: 'A concise public safety notice.',
       publishedAt: publishedAt.toISOString(),
       hasEnglishTranslation: true,
+      category: { slug: 'news', name: 'News' },
     });
     expect(JSON.stringify(result)).not.toMatch(
       /titleHa|summaryHa|status|author|createdAt|updatedAt/,
@@ -125,6 +132,7 @@ describe('PublicNewsService', () => {
       summaryEn: 'A concise public safety notice.',
       bodyEn: 'First paragraph.\n\nSecond paragraph.',
       publishedAt,
+      category: { slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
     });
     const result = await service.detail('sanarwar-tsaro', 'en');
     expect(result).toEqual({
@@ -134,6 +142,7 @@ describe('PublicNewsService', () => {
       body: 'First paragraph.\n\nSecond paragraph.',
       publishedAt: publishedAt.toISOString(),
       hasEnglishTranslation: true,
+      category: { slug: 'news', name: 'News' },
     });
     expect(JSON.stringify(result)).not.toMatch(/status|author|history|reason|titleHa|bodyHa|id/);
   });
