@@ -2,18 +2,20 @@
   "name": "@garkuwa/web",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ../../scripts/stop-stale-next-dev.ps1 && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "env:check": "node --experimental-strip-types ./scripts/check-environment.mts"
   },
   "dependencies": {
     "@garkuwa/i18n": "workspace:*",
     "dotenv": "17.2.3",
-    "next": "16.2.11",
+    "next": "16.2.12",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "zod": "4.4.3"
@@ -26,7 +28,7 @@
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.1",
-    "eslint-config-next": "16.2.11",
+    "eslint-config-next": "16.2.12",
     "jsdom": "^29.1.1",
     "typescript": "5.9.3",
     "vitest": "4.1.10"

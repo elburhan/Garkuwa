@@ -4,11 +4,13 @@ node_modules/
 .next/
 dist/
 coverage/
+logs/
+backups/
+*.dump
+*.sql.gz
 *.tsbuildinfo
 
-.env
-.env.local
-.env.*.local
+.env*
 !.env.example
 
 apps/api/src/generated/prisma/

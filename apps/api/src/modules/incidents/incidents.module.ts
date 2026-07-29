@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { resolve } from 'node:path';
+import { S3Client } from '@aws-sdk/client-s3';
 
 import {
   CONTACT_DATA_ENCRYPTION_KEY,
@@ -39,6 +40,12 @@ import {
   INCIDENT_STORAGE_ROOT,
 } from './attachments/filesystem-incident-object-storage.js';
 import { INCIDENT_OBJECT_STORAGE } from './attachments/incident-object-storage.js';
+import type { IncidentObjectStorage } from './attachments/incident-object-storage.js';
+import {
+  INCIDENT_S3_CLIENT,
+  INCIDENT_S3_CONFIGURATION,
+  S3IncidentObjectStorage,
+} from './attachments/s3-incident-object-storage.js';
 import {
   ATTACHMENT_REVIEW_CLOCK,
   AttachmentReviewRateLimitGuard,
@@ -66,6 +73,7 @@ import {
     AttachmentSecurityReviewService,
     AttachmentReviewRateLimitGuard,
     FilesystemIncidentObjectStorage,
+    S3IncidentObjectStorage,
     IncidentCategoriesService,
     IncidentSubmissionService,
     ContactDataCryptoService,
@@ -73,11 +81,50 @@ import {
     {
       provide: INCIDENT_STORAGE_ROOT,
       useFactory: () =>
-        resolve(process.cwd(), getApiEnvironment().INCIDENT_STORAGE_FILESYSTEM_ROOT),
+        resolve(
+          process.cwd(),
+          getApiEnvironment().INCIDENT_STORAGE_FILESYSTEM_ROOT ?? '.var/incident-uploads',
+        ),
+    },
+    {
+      provide: INCIDENT_S3_CONFIGURATION,
+      useFactory: () => {
+        const environment = getApiEnvironment();
+        return {
+          bucket: environment.S3_BUCKET ?? '',
+          dependencyCheckTimeoutMs: environment.DEPENDENCY_CHECK_TIMEOUT_MS,
+          operationTimeoutMs: environment.STORAGE_OPERATION_TIMEOUT_MS,
+          serverSideEncryption: environment.S3_SERVER_SIDE_ENCRYPTION,
+          kmsKeyId: environment.S3_KMS_KEY_ID,
+        };
+      },
+    },
+    {
+      provide: INCIDENT_S3_CLIENT,
+      useFactory: () => {
+        const environment = getApiEnvironment();
+        return new S3Client({
+          endpoint: environment.S3_ENDPOINT,
+          region: environment.S3_REGION ?? 'us-east-1',
+          forcePathStyle: environment.S3_FORCE_PATH_STYLE,
+          credentials:
+            environment.S3_ACCESS_KEY_ID && environment.S3_SECRET_ACCESS_KEY
+              ? {
+                  accessKeyId: environment.S3_ACCESS_KEY_ID,
+                  secretAccessKey: environment.S3_SECRET_ACCESS_KEY,
+                }
+              : undefined,
+        });
+      },
     },
     {
       provide: INCIDENT_OBJECT_STORAGE,
-      useExisting: FilesystemIncidentObjectStorage,
+      inject: [FilesystemIncidentObjectStorage, S3IncidentObjectStorage],
+      useFactory: (
+        filesystem: FilesystemIncidentObjectStorage,
+        s3: S3IncidentObjectStorage,
+      ): IncidentObjectStorage =>
+        getApiEnvironment().INCIDENT_STORAGE_DRIVER === 's3' ? s3 : filesystem,
     },
     {
       provide: CONTACT_DATA_ENCRYPTION_KEY,
@@ -113,5 +160,6 @@ import {
       useValue: Date.now,
     },
   ],
+  exports: [INCIDENT_OBJECT_STORAGE],
 })
 export class IncidentsModule {}

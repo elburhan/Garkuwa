@@ -11,21 +11,35 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "test": "turbo test",
+    "test": "turbo test && node --test ./scripts/release-smoke.test.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @garkuwa/api db:generate",
     "db:migrate": "pnpm --filter @garkuwa/api db:migrate",
+    "db:migrate:deploy": "pnpm --filter @garkuwa/api db:migrate:deploy",
     "db:status": "pnpm --filter @garkuwa/api db:status",
     "db:studio": "pnpm --filter @garkuwa/api db:studio",
     "db:verify": "pnpm --filter @garkuwa/api db:verify",
+    "env:check": "pnpm --filter @garkuwa/api env:check && pnpm --filter @garkuwa/web env:check",
+    "release:smoke": "node ./scripts/release-smoke.mjs",
     "staff:set-password": "pnpm --filter @garkuwa/api staff:set-password",
     "docker:up": "node ./scripts/docker-compose.mjs up",
     "docker:down": "node ./scripts/docker-compose.mjs down"
   },
   "devDependencies": {
     "prettier": "3.9.6",
-    "turbo": "2.10.5",
+    "turbo": "2.10.7",
     "typescript": "5.9.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@angular-devkit/core@19.2.19>ajv": "8.18.0",
+      "@angular-devkit/core@19.2.19>picomatch": "4.0.5",
+      "@prisma/dev@0.24.14>find-my-way": "9.7.0",
+      "@prisma/dev@0.24.14>valibot": "1.4.2",
+      "brace-expansion@5.0.7": "5.0.8",
+      "next@16.2.12>postcss": "8.5.24",
+      "next@16.2.12>sharp": "0.35.3"
+    }
   }
 }
