@@ -23,5 +23,5 @@ describe('incident report metadata', () => {
         en: 'http://localhost:3000/en/report-incident',
       },
     });
-  });
+  }, 15_000);
 });

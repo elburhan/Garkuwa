@@ -62,8 +62,106 @@ enum AttachmentReviewSource {
 enum NewsArticleStatus {
   DRAFT
   IN_REVIEW
+  CHANGES_REQUESTED
+  READY_TO_PUBLISH
   PUBLISHED
+  UNPUBLISHED
   ARCHIVED
+}
+
+enum LiveEventStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum LiveEventOperationType {
+  CREATED
+  STARTED
+  ENDED
+  REOPENED
+  ARCHIVED
+}
+
+enum NewsroomProfileStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum EditorialLanguage {
+  ha
+  en
+}
+
+enum NewsPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum NewsDesk {
+  GENERAL
+  POLITICS
+  SECURITY
+  BUSINESS
+  EDUCATION
+  HEALTH
+  AGRICULTURE
+  TECHNOLOGY
+  SPORTS
+  CULTURE
+}
+
+enum ContributorPublicStatus {
+  PRIVATE
+  PUBLIC
+}
+
+enum ArticleContributorRole {
+  AUTHOR
+  REPORTER
+  EDITOR
+  PHOTO
+  VIDEO
+  TRANSLATOR
+}
+
+enum NewsSourceType {
+  STAFF_REPORTER
+  CITIZEN_SOURCE
+  OFFICIAL_STATEMENT
+  PRESS_RELEASE
+  AGENCY
+  INTERVIEW
+  DOCUMENT
+  OTHER_PUBLICATION
+}
+
+enum NewsroomMediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+enum NewsroomMediaStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum NewsroomMediaProvenance {
+  STAFF
+  AGENCY
+  OFFICIAL
+  CITIZEN_APPROVED
+  EXTERNAL
+  OTHER
+}
+
+enum NewsArticleMediaRole {
+  INLINE
+  GALLERY
 }
 
 enum SecurityAdvisorySeverity {
@@ -103,22 +201,40 @@ model User {
   createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  assignedIncidents      Incident[]                         @relation("IncidentAssignee")
-  incidentStatusChanges  IncidentStatusHistory[]            @relation("IncidentStatusChangedBy")
-  assignmentsFrom        IncidentAssignmentHistory[]        @relation("IncidentAssignmentFromUser")
-  assignmentsTo          IncidentAssignmentHistory[]        @relation("IncidentAssignmentToUser")
-  assignmentChanges      IncidentAssignmentHistory[]        @relation("IncidentAssignmentChangedBy")
-  contactAccesses        IncidentContactAccessHistory[]
-  authoredIncidentNotes  IncidentStaffNote[]                @relation("IncidentStaffNoteAuthor")
-  deletedIncidentNotes   IncidentStaffNote[]                @relation("IncidentStaffNoteDeletedBy")
-  noteRevisionChanges    IncidentStaffNoteRevision[]        @relation("IncidentStaffNoteRevisionChangedBy")
-  attachmentAccesses     IncidentAttachmentAccessHistory[]
-  attachmentReviews      IncidentAttachmentSecurityReview[]
-  authoredNewsArticles   NewsArticle[]                      @relation("NewsArticleAuthor")
-  newsStatusChanges      NewsArticleStatusHistory[]         @relation("NewsArticleStatusActor")
-  institutionalRevisions InstitutionalPageRevision[]        @relation("InstitutionalRevisionCreator")
-  institutionalChanges   InstitutionalPageWorkflowHistory[] @relation("InstitutionalWorkflowActor")
-  sessions               StaffSession[]
+  assignedIncidents           Incident[]                         @relation("IncidentAssignee")
+  incidentStatusChanges       IncidentStatusHistory[]            @relation("IncidentStatusChangedBy")
+  assignmentsFrom             IncidentAssignmentHistory[]        @relation("IncidentAssignmentFromUser")
+  assignmentsTo               IncidentAssignmentHistory[]        @relation("IncidentAssignmentToUser")
+  assignmentChanges           IncidentAssignmentHistory[]        @relation("IncidentAssignmentChangedBy")
+  contactAccesses             IncidentContactAccessHistory[]
+  authoredIncidentNotes       IncidentStaffNote[]                @relation("IncidentStaffNoteAuthor")
+  deletedIncidentNotes        IncidentStaffNote[]                @relation("IncidentStaffNoteDeletedBy")
+  noteRevisionChanges         IncidentStaffNoteRevision[]        @relation("IncidentStaffNoteRevisionChangedBy")
+  attachmentAccesses          IncidentAttachmentAccessHistory[]
+  attachmentReviews           IncidentAttachmentSecurityReview[]
+  authoredNewsArticles        NewsArticle[]                      @relation("NewsArticleAuthor")
+  assignedNewsWriting         NewsArticle[]                      @relation("NewsArticleAssignedWriter")
+  assignedNewsReview          NewsArticle[]                      @relation("NewsArticleAssignedReviewer")
+  createdNewsRevisions        NewsArticleRevision[]              @relation("NewsArticleRevisionCreator")
+  newsroomProfile             NewsroomStaffProfile?
+  contributorProfile          NewsContributor?
+  newsAssignmentChanges       NewsArticleAssignmentHistory[]     @relation("NewsAssignmentActor")
+  newsAssignmentsFromWriter   NewsArticleAssignmentHistory[]     @relation("NewsAssignmentFromWriter")
+  newsAssignmentsToWriter     NewsArticleAssignmentHistory[]     @relation("NewsAssignmentToWriter")
+  newsAssignmentsFromReviewer NewsArticleAssignmentHistory[]     @relation("NewsAssignmentFromReviewer")
+  newsAssignmentsToReviewer   NewsArticleAssignmentHistory[]     @relation("NewsAssignmentToReviewer")
+  newsStatusChanges           NewsArticleStatusHistory[]         @relation("NewsArticleStatusActor")
+  uploadedNewsroomMedia       NewsroomMedia[]                    @relation("NewsroomMediaUploader")
+  articleCorrections          NewsArticleCorrection[]            @relation("NewsArticleCorrectionCreator")
+  newsSourceAccessAudits      NewsArticleSourceAccessAudit[]
+  institutionalRevisions      InstitutionalPageRevision[]        @relation("InstitutionalRevisionCreator")
+  institutionalChanges        InstitutionalPageWorkflowHistory[] @relation("InstitutionalWorkflowActor")
+  createdLiveEvents           LiveEvent[]                        @relation("LiveEventCreator")
+  createdLiveUpdates          LiveUpdate[]                       @relation("LiveUpdateCreator")
+  liveUpdateRevisions         LiveUpdateRevision[]               @relation("LiveUpdateRevisionCreator")
+  withdrawnLiveUpdates        LiveUpdate[]                       @relation("LiveUpdateWithdrawer")
+  liveEventOperations         LiveEventOperation[]               @relation("LiveEventOperationActor")
+  sessions                    StaffSession[]
 
   @@index([role, status])
   @@map("staff_users")
@@ -137,7 +253,8 @@ model NewsCategory {
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  articles NewsArticle[]
+  articles   NewsArticle[]
+  liveEvents LiveEvent[]
 
   @@index([isActive, displayOrder])
   @@map("news_categories")
@@ -160,11 +277,41 @@ model NewsArticle {
   submittedForReviewAt DateTime?         @map("submitted_for_review_at") @db.Timestamptz(3)
   publishedAt          DateTime?         @map("published_at") @db.Timestamptz(3)
   archivedAt           DateTime?         @map("archived_at") @db.Timestamptz(3)
+  draftRevisionId      String?           @unique @map("draft_revision_id") @db.Uuid
+  submittedRevisionId  String?           @unique @map("submitted_revision_id") @db.Uuid
+  publishedRevisionId  String?           @unique @map("published_revision_id") @db.Uuid
+  assignedWriterId     String?           @map("assigned_writer_id") @db.Uuid
+  assignedReviewerId   String?           @map("assigned_reviewer_id") @db.Uuid
+  desk                 NewsDesk?
+  dueAt                DateTime?         @map("due_at") @db.Timestamptz(3)
+  priority             NewsPriority      @default(NORMAL)
+  featuredMediaId      String?           @map("featured_media_id") @db.Uuid
+  socialMediaId        String?           @map("social_media_id") @db.Uuid
+  isFeatured           Boolean           @default(false) @map("is_featured")
+  isBreaking           Boolean           @default(false) @map("is_breaking")
+  publicUpdatedAt      DateTime?         @map("public_updated_at") @db.Timestamptz(3)
 
-  author           User                       @relation("NewsArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict)
-  category         NewsCategory               @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  statusHistory    NewsArticleStatusHistory[]
-  securityAdvisory NewsSecurityAdvisory?
+  author             User                           @relation("NewsArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  category           NewsCategory                   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  statusHistory      NewsArticleStatusHistory[]
+  securityAdvisory   NewsSecurityAdvisory?
+  revisions          NewsArticleRevision[]          @relation("NewsArticleRevisions")
+  draftRevision      NewsArticleRevision?           @relation("NewsArticleDraftRevision", fields: [draftRevisionId], references: [id], onDelete: Restrict)
+  submittedRevision  NewsArticleRevision?           @relation("NewsArticleSubmittedRevision", fields: [submittedRevisionId], references: [id], onDelete: Restrict)
+  publishedRevision  NewsArticleRevision?           @relation("NewsArticlePublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: Restrict)
+  assignedWriter     User?                          @relation("NewsArticleAssignedWriter", fields: [assignedWriterId], references: [id], onDelete: SetNull)
+  assignedReviewer   User?                          @relation("NewsArticleAssignedReviewer", fields: [assignedReviewerId], references: [id], onDelete: SetNull)
+  assignmentHistory  NewsArticleAssignmentHistory[]
+  contributors       NewsArticleContributor[]
+  tags               NewsArticleTag[]
+  topics             NewsArticleTopic[]
+  locations          NewsArticleLocation[]
+  sources            NewsArticleSource[]
+  sourceAccessAudits NewsArticleSourceAccessAudit[]
+  featuredMedia      NewsroomMedia?                 @relation("NewsArticleFeaturedMedia", fields: [featuredMediaId], references: [id], onDelete: SetNull)
+  socialMedia        NewsroomMedia?                 @relation("NewsArticleSocialMedia", fields: [socialMediaId], references: [id], onDelete: SetNull)
+  media              NewsArticleMedia[]
+  corrections        NewsArticleCorrection[]
 
   @@index([status, updatedAt])
   @@index([authorId, updatedAt])
@@ -172,7 +319,382 @@ model NewsArticle {
   @@index([status, categoryId, publishedAt])
   @@index([createdAt])
   @@index([publishedAt])
+  @@index([assignedWriterId, status, updatedAt])
+  @@index([assignedReviewerId, status, updatedAt])
+  @@index([desk, status, updatedAt])
+  @@index([priority, status, updatedAt])
+  @@index([isFeatured, status, publishedAt])
+  @@index([isBreaking, status, publishedAt])
   @@map("news_articles")
+}
+
+model NewsroomStaffProfile {
+  id                         String                @id @default(uuid()) @db.Uuid
+  userId                     String                @unique @map("user_id") @db.Uuid
+  bylineName                 String                @map("byline_name") @db.VarChar(160)
+  jobTitle                   String?               @map("job_title") @db.VarChar(160)
+  shortBio                   String?               @map("short_bio") @db.VarChar(1000)
+  status                     NewsroomProfileStatus @default(ACTIVE)
+  preferredEditorialLanguage EditorialLanguage     @default(ha) @map("preferred_editorial_language")
+  publicAuthorVisible        Boolean               @default(false) @map("public_author_visible")
+  createdAt                  DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                  DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("newsroom_staff_profiles")
+}
+
+model NewsArticleRevision {
+  id             String   @id @default(uuid()) @db.Uuid
+  articleId      String   @map("article_id") @db.Uuid
+  revisionNumber Int      @map("revision_number")
+  titleHa        String   @map("title_ha") @db.VarChar(180)
+  summaryHa      String   @map("summary_ha") @db.VarChar(500)
+  bodyHa         String   @map("body_ha") @db.Text
+  titleEn        String?  @map("title_en") @db.VarChar(180)
+  summaryEn      String?  @map("summary_en") @db.VarChar(500)
+  bodyEn         String?  @map("body_en") @db.Text
+  bodyBlocksHa   Json?    @map("body_blocks_ha")
+  bodyBlocksEn   Json?    @map("body_blocks_en")
+  createdById    String   @map("created_by_id") @db.Uuid
+  changeNote     String?  @map("change_note") @db.VarChar(1000)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  article      NewsArticle  @relation("NewsArticleRevisions", fields: [articleId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("NewsArticleRevisionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  draftFor     NewsArticle? @relation("NewsArticleDraftRevision")
+  submittedFor NewsArticle? @relation("NewsArticleSubmittedRevision")
+  publishedFor NewsArticle? @relation("NewsArticlePublishedRevision")
+
+  @@unique([articleId, revisionNumber])
+  @@index([articleId, createdAt])
+  @@index([createdById, createdAt])
+  @@map("news_article_revisions")
+}
+
+model NewsroomMedia {
+  id               String                  @id @default(uuid()) @db.Uuid
+  storageKey       String                  @unique @map("storage_key") @db.VarChar(500)
+  originalFilename String                  @map("original_filename") @db.VarChar(255)
+  mimeType         String                  @map("mime_type") @db.VarChar(100)
+  sizeBytes        Int                     @map("size_bytes")
+  width            Int?
+  height           Int?
+  sha256           String                  @db.Char(64)
+  mediaType        NewsroomMediaType       @default(IMAGE) @map("media_type")
+  status           NewsroomMediaStatus     @default(ACTIVE)
+  provenance       NewsroomMediaProvenance
+  altTextHa        String                  @map("alt_text_ha") @db.VarChar(500)
+  altTextEn        String?                 @map("alt_text_en") @db.VarChar(500)
+  captionHa        String?                 @map("caption_ha") @db.VarChar(1000)
+  captionEn        String?                 @map("caption_en") @db.VarChar(1000)
+  credit           String?                 @db.VarChar(300)
+  source           String?                 @db.VarChar(500)
+  rightsNotes      String?                 @map("rights_notes") @db.VarChar(2000)
+  uploadedById     String                  @map("uploaded_by_id") @db.Uuid
+  createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  uploadedBy         User               @relation("NewsroomMediaUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  featuredArticles   NewsArticle[]      @relation("NewsArticleFeaturedMedia")
+  socialArticles     NewsArticle[]      @relation("NewsArticleSocialMedia")
+  articleLinks       NewsArticleMedia[]
+  featuredLiveEvents LiveEvent[]        @relation("LiveEventFeaturedMedia")
+  liveUpdates        LiveUpdate[]
+
+  @@index([status, createdAt])
+  @@index([sha256])
+  @@index([uploadedById, createdAt])
+  @@index([provenance, status])
+  @@map("newsroom_media")
+}
+
+model NewsArticleMedia {
+  articleId    String               @map("article_id") @db.Uuid
+  mediaId      String               @map("media_id") @db.Uuid
+  role         NewsArticleMediaRole
+  displayOrder Int                  @default(0) @map("display_order")
+
+  article NewsArticle   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  media   NewsroomMedia @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@id([articleId, mediaId, role])
+  @@index([articleId, role, displayOrder])
+  @@index([mediaId])
+  @@map("news_article_media")
+}
+
+model NewsArticleCorrection {
+  id          String   @id @default(uuid()) @db.Uuid
+  articleId   String   @map("article_id") @db.Uuid
+  noteHa      String   @map("note_ha") @db.VarChar(2000)
+  noteEn      String?  @map("note_en") @db.VarChar(2000)
+  createdById String   @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdBy User        @relation("NewsArticleCorrectionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([articleId, createdAt])
+  @@index([createdById, createdAt])
+  @@map("news_article_corrections")
+}
+
+model LiveEvent {
+  id              String          @id @default(uuid()) @db.Uuid
+  slug            String          @unique @db.VarChar(120)
+  titleHa         String          @map("title_ha") @db.VarChar(180)
+  titleEn         String?         @map("title_en") @db.VarChar(180)
+  summaryHa       String?         @map("summary_ha") @db.VarChar(500)
+  summaryEn       String?         @map("summary_en") @db.VarChar(500)
+  status          LiveEventStatus @default(DRAFT)
+  isFeatured      Boolean         @default(false) @map("is_featured")
+  nextSequence    Int             @default(0) @map("next_sequence")
+  categoryId      String          @map("category_id") @db.Uuid
+  featuredMediaId String?         @map("featured_media_id") @db.Uuid
+  createdById     String          @map("created_by_id") @db.Uuid
+  startedAt       DateTime?       @map("started_at") @db.Timestamptz(3)
+  closedAt        DateTime?       @map("closed_at") @db.Timestamptz(3)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  category      NewsCategory         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  featuredMedia NewsroomMedia?       @relation("LiveEventFeaturedMedia", fields: [featuredMediaId], references: [id], onDelete: SetNull)
+  createdBy     User                 @relation("LiveEventCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updates       LiveUpdate[]
+  operations    LiveEventOperation[]
+
+  @@index([status, updatedAt])
+  @@index([categoryId, status])
+  @@index([isFeatured, status])
+  @@map("live_events")
+}
+
+model LiveUpdate {
+  id                 String    @id @default(uuid()) @db.Uuid
+  liveEventId        String    @map("live_event_id") @db.Uuid
+  sequence           Int
+  headlineHa         String?   @map("headline_ha") @db.VarChar(180)
+  headlineEn         String?   @map("headline_en") @db.VarChar(180)
+  bodyHa             String    @map("body_ha") @db.Text
+  bodyEn             String?   @map("body_en") @db.Text
+  isRetracted        Boolean   @default(false) @map("is_retracted")
+  isPinned           Boolean   @default(false) @map("is_pinned")
+  correctedAt        DateTime? @map("corrected_at") @db.Timestamptz(3)
+  withdrawnAt        DateTime? @map("withdrawn_at") @db.Timestamptz(3)
+  withdrawnById      String?   @map("withdrawn_by_id") @db.Uuid
+  withdrawalReason   String?   @map("withdrawal_reason") @db.VarChar(1000)
+  mediaId            String?   @map("media_id") @db.Uuid
+  clientSubmissionId String    @map("client_submission_id") @db.Uuid
+  createdById        String    @map("created_by_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  liveEvent   LiveEvent            @relation(fields: [liveEventId], references: [id], onDelete: Cascade)
+  createdBy   User                 @relation("LiveUpdateCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  withdrawnBy User?                @relation("LiveUpdateWithdrawer", fields: [withdrawnById], references: [id], onDelete: Restrict)
+  media       NewsroomMedia?       @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  revisions   LiveUpdateRevision[]
+
+  @@unique([liveEventId, sequence])
+  @@unique([liveEventId, clientSubmissionId])
+  @@index([liveEventId, createdAt])
+  @@index([mediaId])
+  @@map("live_updates")
+}
+
+model LiveUpdateRevision {
+  id           String   @id @default(uuid()) @db.Uuid
+  liveUpdateId String   @map("live_update_id") @db.Uuid
+  headlineHa   String?  @map("headline_ha") @db.VarChar(180)
+  headlineEn   String?  @map("headline_en") @db.VarChar(180)
+  bodyHa       String   @map("body_ha") @db.Text
+  bodyEn       String?  @map("body_en") @db.Text
+  reason       String   @db.VarChar(1000)
+  createdById  String   @map("created_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  liveUpdate LiveUpdate @relation(fields: [liveUpdateId], references: [id], onDelete: Cascade)
+  createdBy  User       @relation("LiveUpdateRevisionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([liveUpdateId, createdAt])
+  @@map("live_update_revisions")
+}
+
+model LiveEventOperation {
+  id        String                 @id @default(uuid()) @db.Uuid
+  eventId   String                 @map("event_id") @db.Uuid
+  action    LiveEventOperationType
+  actorId   String                 @map("actor_id") @db.Uuid
+  createdAt DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  event LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  actor User      @relation("LiveEventOperationActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([eventId, createdAt])
+  @@map("live_event_operations")
+}
+
+model NewsContributor {
+  id           String                  @id @default(uuid()) @db.Uuid
+  displayName  String                  @map("display_name") @db.VarChar(160)
+  slug         String                  @unique @db.VarChar(100)
+  bio          String?                 @db.VarChar(1000)
+  userId       String?                 @unique @map("user_id") @db.Uuid
+  publicStatus ContributorPublicStatus @default(PRIVATE) @map("public_status")
+  createdAt    DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user     User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  articles NewsArticleContributor[]
+
+  @@index([publicStatus, displayName])
+  @@map("news_contributors")
+}
+
+model NewsArticleContributor {
+  articleId     String                 @map("article_id") @db.Uuid
+  contributorId String                 @map("contributor_id") @db.Uuid
+  role          ArticleContributorRole
+  displayOrder  Int                    @default(0) @map("display_order")
+
+  article     NewsArticle     @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  contributor NewsContributor @relation(fields: [contributorId], references: [id], onDelete: Restrict)
+
+  @@id([articleId, contributorId, role])
+  @@index([articleId, displayOrder])
+  @@map("news_article_contributors")
+}
+
+model NewsTag {
+  id        String           @id @default(uuid()) @db.Uuid
+  slug      String           @unique @db.VarChar(100)
+  name      String           @db.VarChar(100)
+  isActive  Boolean          @default(true) @map("is_active")
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  articles  NewsArticleTag[]
+
+  @@index([isActive, name])
+  @@map("news_tags")
+}
+
+model NewsArticleTag {
+  articleId String      @map("article_id") @db.Uuid
+  tagId     String      @map("tag_id") @db.Uuid
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       NewsTag     @relation(fields: [tagId], references: [id], onDelete: Restrict)
+
+  @@id([articleId, tagId])
+  @@index([tagId])
+  @@map("news_article_tags")
+}
+
+model NewsTopic {
+  id        String             @id @default(uuid()) @db.Uuid
+  slug      String             @unique @db.VarChar(100)
+  nameHa    String             @map("name_ha") @db.VarChar(160)
+  nameEn    String?            @map("name_en") @db.VarChar(160)
+  isActive  Boolean            @default(true) @map("is_active")
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  articles  NewsArticleTopic[]
+
+  @@index([isActive, nameHa])
+  @@map("news_topics")
+}
+
+model NewsArticleTopic {
+  articleId String      @map("article_id") @db.Uuid
+  topicId   String      @map("topic_id") @db.Uuid
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  topic     NewsTopic   @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  @@id([articleId, topicId])
+  @@index([topicId])
+  @@map("news_article_topics")
+}
+
+model NewsArticleLocation {
+  id        String      @id @default(uuid()) @db.Uuid
+  articleId String      @map("article_id") @db.Uuid
+  country   String      @default("Nigeria") @db.VarChar(100)
+  state     String?     @db.VarChar(100)
+  lga       String?     @db.VarChar(100)
+  place     String?     @db.VarChar(160)
+  latitude  Decimal?    @db.Decimal(9, 6)
+  longitude Decimal?    @db.Decimal(10, 6)
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([country, state, lga])
+  @@map("news_article_locations")
+}
+
+model NewsArticleSource {
+  id            String                         @id @default(uuid()) @db.Uuid
+  articleId     String                         @map("article_id") @db.Uuid
+  type          NewsSourceType
+  publicLabel   String?                        @map("public_label") @db.VarChar(300)
+  url           String?                        @db.VarChar(2000)
+  organization  String?                        @db.VarChar(200)
+  confidential  Boolean                        @default(false)
+  internalNotes String?                        @map("internal_notes") @db.Text
+  displayOrder  Int                            @default(0) @map("display_order")
+  createdAt     DateTime                       @default(now()) @map("created_at") @db.Timestamptz(3)
+  article       NewsArticle                    @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  accessAudits  NewsArticleSourceAccessAudit[]
+
+  @@index([articleId, type])
+  @@index([articleId, displayOrder])
+  @@map("news_article_sources")
+}
+
+model NewsArticleSourceAccessAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  articleId String   @map("article_id") @db.Uuid
+  sourceId  String   @map("source_id") @db.Uuid
+  staffId   String   @map("staff_id") @db.Uuid
+  reason    String   @db.VarChar(1000)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  article NewsArticle       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  source  NewsArticleSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  staff   User              @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@index([articleId, createdAt])
+  @@index([sourceId, createdAt])
+  @@index([staffId, createdAt])
+  @@map("news_article_source_access_audits")
+}
+
+model NewsArticleAssignmentHistory {
+  id             String       @id @default(uuid()) @db.Uuid
+  articleId      String       @map("article_id") @db.Uuid
+  fromWriterId   String?      @map("from_writer_id") @db.Uuid
+  toWriterId     String?      @map("to_writer_id") @db.Uuid
+  fromReviewerId String?      @map("from_reviewer_id") @db.Uuid
+  toReviewerId   String?      @map("to_reviewer_id") @db.Uuid
+  fromDesk       NewsDesk?    @map("from_desk")
+  toDesk         NewsDesk?    @map("to_desk")
+  fromDueAt      DateTime?    @map("from_due_at") @db.Timestamptz(3)
+  toDueAt        DateTime?    @map("to_due_at") @db.Timestamptz(3)
+  fromPriority   NewsPriority @map("from_priority")
+  toPriority     NewsPriority @map("to_priority")
+  changedById    String       @map("changed_by_id") @db.Uuid
+  reason         String?      @db.VarChar(1000)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  article      NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  fromWriter   User?       @relation("NewsAssignmentFromWriter", fields: [fromWriterId], references: [id], onDelete: SetNull)
+  toWriter     User?       @relation("NewsAssignmentToWriter", fields: [toWriterId], references: [id], onDelete: SetNull)
+  fromReviewer User?       @relation("NewsAssignmentFromReviewer", fields: [fromReviewerId], references: [id], onDelete: SetNull)
+  toReviewer   User?       @relation("NewsAssignmentToReviewer", fields: [toReviewerId], references: [id], onDelete: SetNull)
+  changedBy    User        @relation("NewsAssignmentActor", fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([articleId, createdAt])
+  @@index([changedById, createdAt])
+  @@map("news_article_assignment_history")
 }
 
 model NewsSecurityAdvisory {

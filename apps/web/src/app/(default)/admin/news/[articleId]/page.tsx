@@ -5,7 +5,13 @@ import { AdminNewsDetail } from '@/components/admin/admin-news-detail';
 import type { Locale } from '@/i18n';
 import { getMessages } from '@/i18n';
 import { getAdminPrincipal } from '@/lib/admin-auth';
-import { loadNewsArticle, loadNewsCategories, loadNewsHistory } from '@/lib/admin-news-api';
+import { loadAdminMedia } from '@/lib/admin-media-server-api';
+import {
+  loadNewsArticle,
+  loadNewsCategories,
+  loadNewsEligibleAssignees,
+  loadNewsHistory,
+} from '@/lib/admin-news-api';
 
 export const metadata: Metadata = { title: 'Rubutun edita | Gidauniyar Garkuwa' };
 const viewerRoles = new Set(['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'MODERATOR']);
@@ -29,11 +35,15 @@ export default async function NewsArticleDetailPage({
       </main>
     );
   }
-  const [articleResult, historyResult, categoriesResult] = await Promise.all([
-    loadNewsArticle(articleId),
-    loadNewsHistory(articleId),
-    loadNewsCategories(),
-  ]);
+  const canAssign = principal.role === 'SUPER_ADMIN' || principal.role === 'ADMIN';
+  const [articleResult, historyResult, categoriesResult, assigneesResult, mediaResult] =
+    await Promise.all([
+      loadNewsArticle(articleId),
+      loadNewsHistory(articleId),
+      loadNewsCategories(),
+      canAssign ? loadNewsEligibleAssignees() : Promise.resolve(null),
+      loadAdminMedia({ status: 'ACTIVE' }),
+    ]);
   if (articleResult.kind === 'unauthenticated')
     redirect(`/admin/login?lang=${locale}&reason=expired`);
   if (articleResult.kind === 'not-found') notFound();
@@ -56,6 +66,8 @@ export default async function NewsArticleDetailPage({
       article={articleResult.data.article}
       history={historyResult.data.items}
       categories={categoriesResult.data.items}
+      assignees={assigneesResult?.kind === 'success' ? assigneesResult.data.items : []}
+      media={mediaResult.kind === 'success' ? mediaResult.data.items : []}
     />
   );
 }

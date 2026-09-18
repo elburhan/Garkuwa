@@ -51,6 +51,7 @@ const apiEnvironmentSchema = z
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'log', 'debug', 'verbose']).default('log'),
     INCIDENT_STORAGE_DRIVER: z.enum(['filesystem', 's3']),
     INCIDENT_STORAGE_FILESYSTEM_ROOT: z.string().trim().min(1).optional(),
+    NEWSROOM_MEDIA_FILESYSTEM_ROOT: z.string().trim().min(1).default('.var/newsroom-media'),
     ALLOW_PRODUCTION_FILESYSTEM_STORAGE: booleanString.default(false),
     S3_ENDPOINT: z.url().optional(),
     S3_REGION: z.string().trim().min(1).optional(),

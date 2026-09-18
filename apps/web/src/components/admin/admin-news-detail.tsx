@@ -2,9 +2,18 @@ import Link from 'next/link';
 
 import { getMessages, type Locale } from '@/i18n';
 import type { AdminPrincipal } from '@/lib/admin-auth';
-import type { NewsArticle, NewsCategories, NewsHistory } from '@/lib/admin-news-api';
+import type { AdminMedia } from '@/lib/admin-media-api';
+import type {
+  NewsArticle,
+  NewsCategories,
+  NewsEligibleAssignees,
+  NewsHistory,
+} from '@/lib/admin-news-api';
 
+import { AdminNewsAssignment } from './admin-news-assignment';
+import { AdminArticleMedia } from './admin-article-media';
 import { AdminNewsForm } from './admin-news-form';
+import { AdminNewsPublishingOptions } from './admin-news-publishing-options';
 import { AdminNewsWorkflow } from './admin-news-workflow';
 
 export function AdminNewsDetail({
@@ -13,12 +22,16 @@ export function AdminNewsDetail({
   article,
   history,
   categories,
+  assignees,
+  media = [],
 }: Readonly<{
   locale: Locale;
   principal: AdminPrincipal;
   article: NewsArticle;
   history: NewsHistory['items'];
   categories: NewsCategories['items'];
+  assignees: NewsEligibleAssignees['items'];
+  media?: AdminMedia[];
 }>) {
   const messages = getMessages(locale).admin.news;
   const dates = new Intl.DateTimeFormat(locale === 'ha' ? 'ha-NG' : 'en-NG', {
@@ -26,15 +39,23 @@ export function AdminNewsDetail({
     timeStyle: 'short',
   });
   const canEdit =
-    article.status === 'DRAFT' &&
+    (article.status === 'DRAFT' || article.status === 'CHANGES_REQUESTED') &&
     (principal.role === 'SUPER_ADMIN' ||
       principal.role === 'ADMIN' ||
       (principal.role === 'EDITOR' && principal.id === article.author.id));
   const lang = locale === 'en' ? '?lang=en' : '';
+  function historyLabel(entry: NewsHistory['items'][number]): string {
+    if (entry.toStatus === 'IN_REVIEW') return messages.sendToEditor;
+    if (entry.toStatus === 'CHANGES_REQUESTED') return messages.returnStory;
+    if (entry.toStatus === 'PUBLISHED') return messages.publish;
+    return messages.status[entry.toStatus];
+  }
   return (
     <main className="admin-content content-width section-spacing" lang={locale}>
       <nav aria-label={messages.management}>
         <Link href={`/admin/news${lang}`}>{messages.backToArticles}</Link>
+        {' · '}
+        <Link href={`/admin/news/${article.id}/preview${lang}`}>{messages.preview}</Link>
       </nav>
       <header className="admin-landing-header">
         <div>
@@ -64,6 +85,37 @@ export function AdminNewsDetail({
           <dd>{dates.format(new Date(article.updatedAt))}</dd>
         </div>
       </dl>
+      {canEdit ? <AdminArticleMedia locale={locale} article={article} media={media} /> : null}
+      {principal.role === 'SUPER_ADMIN' || principal.role === 'ADMIN' ? (
+        <AdminNewsPublishingOptions locale={locale} article={article} />
+      ) : null}
+      <details className="admin-detail-card">
+        <summary>{messages.moreOptions}</summary>
+        <section aria-labelledby="news-assignment-title">
+          <h2 id="news-assignment-title">{messages.assignment}</h2>
+          <dl className="admin-detail-grid">
+            <div>
+              <dt>{messages.writer}</dt>
+              <dd>{article.assignedWriter?.displayName ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>{messages.reviewer}</dt>
+              <dd>{article.assignedReviewer?.displayName ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>{messages.desk}</dt>
+              <dd>{article.desk ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>{messages.priority}</dt>
+              <dd>{article.priority ?? 'NORMAL'}</dd>
+            </div>
+          </dl>
+          {principal.role === 'SUPER_ADMIN' || principal.role === 'ADMIN' ? (
+            <AdminNewsAssignment locale={locale} article={article} assignees={assignees} />
+          ) : null}
+        </section>
+      </details>
       {canEdit ? (
         <section aria-labelledby="edit-news-title">
           <h2 id="edit-news-title">{messages.editDraft}</h2>
@@ -136,19 +188,21 @@ export function AdminNewsDetail({
         </>
       )}
       <section className="admin-detail-card" aria-labelledby="workflow-title">
-        <h2 id="workflow-title">{messages.editorialHistory}</h2>
         <AdminNewsWorkflow locale={locale} article={article} principal={principal} />
-        <ol className="admin-status-history">
-          {history.map((entry) => (
-            <li key={entry.id}>
-              <p>
-                <strong>{messages.status[entry.toStatus]}</strong> · {entry.actor.displayName}
-              </p>
-              <time dateTime={entry.createdAt}>{dates.format(new Date(entry.createdAt))}</time>
-              {entry.reason ? <p>{entry.reason}</p> : null}
-            </li>
-          ))}
-        </ol>
+        <details>
+          <summary>{messages.editorialHistory}</summary>
+          <ol className="admin-status-history">
+            {history.map((entry) => (
+              <li key={entry.id}>
+                <p>
+                  <strong>{historyLabel(entry)}</strong> · {entry.actor.displayName}
+                </p>
+                <time dateTime={entry.createdAt}>{dates.format(new Date(entry.createdAt))}</time>
+                {entry.reason ? <p>{entry.reason}</p> : null}
+              </li>
+            ))}
+          </ol>
+        </details>
       </section>
       {article.status === 'PUBLISHED' ? (
         <p className="admin-read-only-notice">{messages.notPublicWarning}</p>

@@ -34,6 +34,13 @@ export function AdminNewsList({
   const selectedCategory = Array.isArray(parameters.category)
     ? parameters.category[0]
     : parameters.category;
+  const views = [
+    ['ALL', messages.articles],
+    ['MY_DRAFTS', messages.myDrafts],
+    ['NEEDS_REVIEW', messages.waitingForEditor],
+    ['CHANGES_REQUESTED', messages.changesRequested],
+    ['PUBLISHED_TODAY', messages.published],
+  ] as const;
   return (
     <main className="admin-content content-width section-spacing" lang={locale}>
       <header className="admin-landing-header">
@@ -58,7 +65,15 @@ export function AdminNewsList({
 
       <form method="get" className="admin-filter-form">
         {locale === 'en' ? <input type="hidden" name="lang" value="en" /> : null}
-        <label htmlFor="news-status-filter">{messages.filterStatus}</label>
+        <label htmlFor="news-view-filter">{messages.view}</label>
+        <select id="news-view-filter" name="view" defaultValue={String(parameters.view ?? 'ALL')}>
+          {views.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <label htmlFor="news-status-filter">{messages.statusLabel}</label>
         <select
           id="news-status-filter"
           name="status"
@@ -117,8 +132,8 @@ export function AdminNewsList({
                 <th scope="col">{messages.title}</th>
                 <th scope="col">{messages.statusLabel}</th>
                 <th scope="col">{messages.category}</th>
-                <th scope="col">{messages.severity}</th>
                 <th scope="col">{messages.author}</th>
+                <th scope="col">{messages.languageCompleteness}</th>
                 <th scope="col">{messages.lastUpdated}</th>
                 <th scope="col">{messages.created}</th>
               </tr>
@@ -134,12 +149,12 @@ export function AdminNewsList({
                   </td>
                   <td>{messages.status[article.status]}</td>
                   <td>{locale === 'ha' ? article.category.nameHa : article.category.nameEn}</td>
-                  <td>
-                    {article.securityAdvisory
-                      ? messages.severityLabels[article.securityAdvisory.severity]
-                      : '—'}
-                  </td>
                   <td>{article.author.displayName}</td>
+                  <td>
+                    {article.languageCompleteness === 'BILINGUAL'
+                      ? messages.bilingual
+                      : messages.hausaOnly}
+                  </td>
                   <td>{dates.format(new Date(article.updatedAt))}</td>
                   <td>{dates.format(new Date(article.createdAt))}</td>
                 </tr>

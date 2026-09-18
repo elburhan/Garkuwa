@@ -14,6 +14,56 @@ const advisoryPublicSelect = {
   recommendedActionsEn: true,
   referencesJson: true,
 } as const;
+const publicContributorsSelect = {
+  select: {
+    role: true,
+    displayOrder: true,
+    contributor: {
+      select: { displayName: true, slug: true, publicStatus: true },
+    },
+  },
+  orderBy: { displayOrder: 'asc' as const },
+} as const;
+const publicMediaSelect = {
+  id: true,
+  mimeType: true,
+  width: true,
+  height: true,
+  altTextHa: true,
+  altTextEn: true,
+  captionHa: true,
+  captionEn: true,
+  credit: true,
+  status: true,
+} as const;
+
+function mediaProjection(
+  media: {
+    id: string;
+    mimeType: string;
+    width: number | null;
+    height: number | null;
+    altTextHa: string;
+    altTextEn: string | null;
+    captionHa: string | null;
+    captionEn: string | null;
+    credit: string | null;
+    status: string;
+  } | null,
+  language: PublicNewsLanguage,
+) {
+  if (!media?.width || !media.height || media.status !== 'ACTIVE') return null;
+  return {
+    id: media.id,
+    url: `/api/public/news/media/${media.id}`,
+    mimeType: media.mimeType,
+    width: media.width,
+    height: media.height,
+    altText: language === 'en' ? (media.altTextEn ?? media.altTextHa) : media.altTextHa,
+    caption: language === 'en' ? (media.captionEn ?? media.captionHa) : media.captionHa,
+    credit: media.credit,
+  };
+}
 
 const completeEnglishTranslation: Prisma.NewsArticleWhereInput = {
   AND: [
@@ -72,7 +122,12 @@ export class PublicNewsService {
             titleEn: true,
             summaryEn: true,
             publishedAt: true,
+            publicUpdatedAt: true,
+            isFeatured: true,
+            isBreaking: true,
+            featuredMedia: { select: publicMediaSelect },
             category,
+            contributors: publicContributorsSelect,
             securityAdvisory: { select: { severity: true } },
           }
         : {
@@ -80,10 +135,15 @@ export class PublicNewsService {
             titleHa: true,
             summaryHa: true,
             publishedAt: true,
+            publicUpdatedAt: true,
+            isFeatured: true,
+            isBreaking: true,
+            featuredMedia: { select: publicMediaSelect },
             titleEn: true,
             summaryEn: true,
             bodyEn: true,
             category,
+            contributors: publicContributorsSelect,
             securityAdvisory: { select: { severity: true } },
           };
     const [totalItems, articles] = await this.prisma.$transaction([
@@ -91,7 +151,7 @@ export class PublicNewsService {
       this.prisma.newsArticle.findMany({
         where,
         select,
-        orderBy: [{ publishedAt: 'desc' }, { slug: 'desc' }],
+        orderBy: [{ isFeatured: 'desc' }, { publishedAt: 'desc' }, { slug: 'desc' }],
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
       }),
@@ -104,8 +164,19 @@ export class PublicNewsService {
             title: article.titleEn!,
             summary: article.summaryEn!,
             publishedAt: article.publishedAt!.toISOString(),
+            updatedAt: article.publicUpdatedAt?.toISOString() ?? article.publishedAt!.toISOString(),
+            isFeatured: article.isFeatured,
+            isBreaking: article.isBreaking,
+            featuredMedia: mediaProjection(article.featuredMedia, query.lang),
             hasEnglishTranslation: true,
             category: { slug: article.category.slug, name: article.category.nameEn },
+            contributors: (article.contributors ?? [])
+              .filter((item) => item.contributor.publicStatus === 'PUBLIC')
+              .map((item) => ({
+                displayName: item.contributor.displayName,
+                slug: item.contributor.slug,
+                contributorRole: item.role,
+              })),
             securityAdvisory: article.securityAdvisory
               ? { severity: article.securityAdvisory.severity }
               : null,
@@ -115,8 +186,19 @@ export class PublicNewsService {
             title: article.titleHa,
             summary: article.summaryHa,
             publishedAt: article.publishedAt!.toISOString(),
+            updatedAt: article.publicUpdatedAt?.toISOString() ?? article.publishedAt!.toISOString(),
+            isFeatured: article.isFeatured,
+            isBreaking: article.isBreaking,
+            featuredMedia: mediaProjection(article.featuredMedia, query.lang),
             hasEnglishTranslation: Boolean(article.titleEn && article.summaryEn && article.bodyEn),
             category: { slug: article.category.slug, name: article.category.nameHa },
+            contributors: (article.contributors ?? [])
+              .filter((item) => item.contributor.publicStatus === 'PUBLIC')
+              .map((item) => ({
+                displayName: item.contributor.displayName,
+                slug: item.contributor.slug,
+                contributorRole: item.role,
+              })),
             securityAdvisory: article.securityAdvisory
               ? { severity: article.securityAdvisory.severity }
               : null,
@@ -149,7 +231,23 @@ export class PublicNewsService {
           summaryEn: true,
           bodyEn: true,
           publishedAt: true,
+          publicUpdatedAt: true,
+          isFeatured: true,
+          isBreaking: true,
+          featuredMedia: { select: publicMediaSelect },
+          socialMedia: { select: publicMediaSelect },
+          publishedRevision: { select: { bodyBlocksEn: true } },
+          media: {
+            where: { role: 'GALLERY' },
+            select: { displayOrder: true, media: { select: publicMediaSelect } },
+            orderBy: { displayOrder: 'asc' },
+          },
+          corrections: {
+            select: { id: true, noteEn: true, createdAt: true },
+            orderBy: { createdAt: 'asc' },
+          },
           category: { select: { slug: true, nameEn: true } },
+          contributors: publicContributorsSelect,
           securityAdvisory: { select: advisoryPublicSelect },
         },
       });
@@ -160,8 +258,30 @@ export class PublicNewsService {
         summary: article.summaryEn!,
         body: article.bodyEn!,
         publishedAt: article.publishedAt.toISOString(),
+        updatedAt: article.publicUpdatedAt?.toISOString() ?? article.publishedAt.toISOString(),
+        isFeatured: article.isFeatured,
+        isBreaking: article.isBreaking,
+        featuredMedia: mediaProjection(article.featuredMedia, language),
+        socialMedia: mediaProjection(article.socialMedia, language),
+        gallery: article.media.flatMap((item) => {
+          const media = mediaProjection(item.media, language);
+          return media ? [{ displayOrder: item.displayOrder, media }] : [];
+        }),
+        bodyBlocks: article.publishedRevision?.bodyBlocksEn ?? null,
+        corrections: article.corrections.flatMap((item) =>
+          item.noteEn
+            ? [{ id: item.id, note: item.noteEn, createdAt: item.createdAt.toISOString() }]
+            : [],
+        ),
         hasEnglishTranslation: true,
         category: { slug: article.category.slug, name: article.category.nameEn },
+        contributors: (article.contributors ?? [])
+          .filter((item) => item.contributor.publicStatus === 'PUBLIC')
+          .map((item) => ({
+            displayName: item.contributor.displayName,
+            slug: item.contributor.slug,
+            contributorRole: item.role,
+          })),
         securityAdvisory: article.securityAdvisory
           ? {
               severity: article.securityAdvisory.severity,
@@ -181,10 +301,26 @@ export class PublicNewsService {
         summaryHa: true,
         bodyHa: true,
         publishedAt: true,
+        publicUpdatedAt: true,
+        isFeatured: true,
+        isBreaking: true,
+        featuredMedia: { select: publicMediaSelect },
+        socialMedia: { select: publicMediaSelect },
+        publishedRevision: { select: { bodyBlocksHa: true } },
+        media: {
+          where: { role: 'GALLERY' },
+          select: { displayOrder: true, media: { select: publicMediaSelect } },
+          orderBy: { displayOrder: 'asc' },
+        },
+        corrections: {
+          select: { id: true, noteHa: true, createdAt: true },
+          orderBy: { createdAt: 'asc' },
+        },
         titleEn: true,
         summaryEn: true,
         bodyEn: true,
         category: { select: { slug: true, nameHa: true } },
+        contributors: publicContributorsSelect,
         securityAdvisory: { select: advisoryPublicSelect },
       },
     });
@@ -195,8 +331,30 @@ export class PublicNewsService {
       summary: article.summaryHa,
       body: article.bodyHa,
       publishedAt: article.publishedAt.toISOString(),
+      updatedAt: article.publicUpdatedAt?.toISOString() ?? article.publishedAt.toISOString(),
+      isFeatured: article.isFeatured,
+      isBreaking: article.isBreaking,
+      featuredMedia: mediaProjection(article.featuredMedia, language),
+      socialMedia: mediaProjection(article.socialMedia, language),
+      gallery: article.media.flatMap((item) => {
+        const media = mediaProjection(item.media, language);
+        return media ? [{ displayOrder: item.displayOrder, media }] : [];
+      }),
+      bodyBlocks: article.publishedRevision?.bodyBlocksHa ?? null,
+      corrections: article.corrections.map((item) => ({
+        id: item.id,
+        note: item.noteHa,
+        createdAt: item.createdAt.toISOString(),
+      })),
       hasEnglishTranslation: Boolean(article.titleEn && article.summaryEn && article.bodyEn),
       category: { slug: article.category.slug, name: article.category.nameHa },
+      contributors: (article.contributors ?? [])
+        .filter((item) => item.contributor.publicStatus === 'PUBLIC')
+        .map((item) => ({
+          displayName: item.contributor.displayName,
+          slug: item.contributor.slug,
+          contributorRole: item.role,
+        })),
       securityAdvisory: article.securityAdvisory
         ? {
             severity: article.securityAdvisory.severity,

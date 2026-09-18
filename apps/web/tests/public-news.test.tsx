@@ -4,7 +4,14 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('../src/lib/env', () => ({
+  webEnvironment: {
+    NEXT_PUBLIC_API_BASE_URL: 'http://localhost:4000/api',
+    NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+  },
+}));
 
 import { PublicHome } from '../src/components/public/public-home';
 import { PublicNewsArticle } from '../src/components/public/public-news-article';
@@ -20,6 +27,10 @@ const list: PublicNewsList = {
       title: 'Sanarwar Tsaro',
       summary: 'Taƙaitaccen bayanin sanarwar jama’a.',
       publishedAt,
+      updatedAt: publishedAt,
+      isFeatured: false,
+      isBreaking: false,
+      featuredMedia: null,
       hasEnglishTranslation: true,
       category: { slug: 'news', name: 'Labarai' },
       securityAdvisory: null,
@@ -29,7 +40,11 @@ const list: PublicNewsList = {
 };
 const detail: PublicNewsDetail = {
   ...list.items[0]!,
+  socialMedia: null,
   body: 'Sakin layi na farko.\n\nSakin layi na biyu.',
+  bodyBlocks: null,
+  gallery: [],
+  corrections: [],
   securityAdvisory: null,
 };
 
@@ -109,6 +124,45 @@ describe('public news delivery', () => {
     expect(screen.getByText('<b>Ba HTML ba</b>')).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Rubutun Turanci' })).toBeNull();
     expect(screen.getByText(/Ba a samar da cikakken fassarar Turanci/)).toBeTruthy();
+  });
+
+  it('renders featured, inline and gallery images with editorial accessibility metadata', () => {
+    const image = {
+      id: '52fc7e20-ab06-4f7c-8d3c-15f075275fd3',
+      url: '/api/public/news/media/52fc7e20-ab06-4f7c-8d3c-15f075275fd3',
+      mimeType: 'image/jpeg' as const,
+      width: 640,
+      height: 360,
+      altText: 'Ruwan sama ya rufe wani ɓangaren hanya',
+      caption: 'Ruwa a kan hanyar birni',
+      credit: 'Hoton ma’aikaci',
+    };
+    render(
+      <PublicNewsArticle
+        locale="ha"
+        article={{
+          ...detail,
+          isBreaking: true,
+          featuredMedia: image,
+          bodyBlocks: [{ type: 'image', mediaId: image.id }],
+          gallery: [
+            { displayOrder: 0, media: { ...image, id: '62fc7e20-ab06-4f7c-8d3c-15f075275fd3' } },
+          ],
+          corrections: [
+            {
+              id: '72fc7e20-ab06-4f7c-8d3c-15f075275fd3',
+              note: 'An gyara lokacin da aka ambata a baya.',
+              createdAt: '2026-09-15T11:00:00.000Z',
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText('Labarin gaggawa')).toBeTruthy();
+    expect(screen.getAllByAltText(image.altText)).toHaveLength(3);
+    expect(screen.getByRole('region', { name: 'Jerin hotunan labari' })).toBeTruthy();
+    expect(screen.getByText('An gyara lokacin da aka ambata a baya.')).toBeTruthy();
+    expect(screen.queryByText(/storageKey|sha256|rightsNotes/)).toBeNull();
   });
 
   it('shows at most three recent articles without displacing the incident-reporting action', () => {

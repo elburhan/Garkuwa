@@ -1,6 +1,21 @@
 import { BadRequestException } from '@nestjs/common';
 import type { PipeTransform } from '@nestjs/common';
 import { z } from 'zod';
+import {
+  newsroomAssignmentUpdateSchema,
+  newsroomWorkflowActionSchema,
+  type NewsroomAssignmentUpdate,
+  type NewsroomWorkflowAction,
+} from '@garkuwa/contracts';
+import {
+  articleCorrectionInputSchema,
+  articleMediaUpdateSchema,
+  articlePublishingMetadataSchema,
+  richArticleBodySchema,
+  type ArticleCorrectionInput,
+  type ArticleMediaUpdate,
+  type ArticlePublishingMetadata,
+} from '@garkuwa/contracts/media';
 
 import { NewsArticleStatus } from '../../../generated/prisma/enums.js';
 
@@ -95,9 +110,12 @@ const bilingualContentShape = {
   titleHa: requiredText(5, 180),
   summaryHa: requiredText(10, 500),
   bodyHa: requiredText(20, 50_000),
+  bodyBlocksHa: richArticleBodySchema.optional(),
   titleEn: optionalTranslation(5, 180),
   summaryEn: optionalTranslation(10, 500),
   bodyEn: optionalTranslation(20, 50_000),
+  bodyBlocksEn: richArticleBodySchema.optional(),
+  changeNote: z.string().trim().min(3).max(1000).optional(),
 };
 
 function requireCompleteEnglishTranslation(
@@ -209,28 +227,123 @@ export const updateNewsArticleSchema = z
     enforceSecurityAdvisoryRules(value, context);
   });
 
-export const newsArticleDecisionSchema = z
+export const newsArticleDecisionSchema = newsroomWorkflowActionSchema;
+export const newsArticleAssignmentSchema = newsroomAssignmentUpdateSchema;
+export const newsArticleMediaSchema = articleMediaUpdateSchema;
+export const newsArticlePublishingMetadataSchema = articlePublishingMetadataSchema;
+export const newsArticleCorrectionSchema = articleCorrectionInputSchema;
+
+const contributorRoleSchema = z.enum([
+  'AUTHOR',
+  'REPORTER',
+  'EDITOR',
+  'PHOTO',
+  'VIDEO',
+  'TRANSLATOR',
+]);
+const sourceTypeSchema = z.enum([
+  'STAFF_REPORTER',
+  'CITIZEN_SOURCE',
+  'OFFICIAL_STATEMENT',
+  'PRESS_RELEASE',
+  'AGENCY',
+  'INTERVIEW',
+  'DOCUMENT',
+  'OTHER_PUBLICATION',
+]);
+const metadataLocationSchema = z
   .object({
-    decision: z.enum(['SUBMIT_FOR_REVIEW', 'RETURN_TO_DRAFT', 'APPROVE_PUBLICATION', 'ARCHIVE']),
-    reason: z
+    country: requiredText(2, 100).default('Nigeria'),
+    state: z.string().trim().max(100).nullable().default(null),
+    lga: z.string().trim().max(100).nullable().default(null),
+    place: z.string().trim().max(160).nullable().default(null),
+  })
+  .strict();
+const metadataSourceSchema = z
+  .object({
+    id: z.uuid().optional(),
+    type: sourceTypeSchema,
+    publicLabel: z.string().trim().max(300).nullable().default(null),
+    organization: z.string().trim().max(200).nullable().default(null),
+    url: z.string().trim().url().max(2000).nullable().default(null),
+    confidential: z.boolean().default(false),
+    internalNotes: z.string().max(50_000).nullable().default(null),
+    displayOrder: z.number().int().nonnegative().default(0),
+  })
+  .strict();
+
+export const newsArticleMetadataSchema = z
+  .object({
+    expectedUpdatedAt: z.iso.datetime({ offset: true }),
+    contributors: z
+      .array(
+        z
+          .object({
+            contributorId: z.uuid(),
+            role: contributorRoleSchema,
+            displayOrder: z.number().int().nonnegative(),
+          })
+          .strict(),
+      )
+      .max(20)
+      .default([]),
+    tagIds: z.array(z.uuid()).max(30).default([]),
+    topicIds: z.array(z.uuid()).max(30).default([]),
+    locations: z.array(metadataLocationSchema).max(20).default([]),
+    sources: z.array(metadataSourceSchema).max(20).default([]),
+  })
+  .strict();
+
+export const contributorCreateSchema = z
+  .object({
+    displayName: requiredText(2, 160),
+    slug: z
       .string()
       .trim()
-      .max(1000)
-      .optional()
-      .transform((value) => value || undefined)
-      .pipe(z.string().min(10).max(1000).optional()),
-    expectedUpdatedAt: z.iso.datetime({ offset: true }),
+      .min(2)
+      .max(100)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    bio: z.string().trim().max(1000).nullable().default(null),
+    userId: z.uuid().nullable().default(null),
+    publicStatus: z.enum(['PRIVATE', 'PUBLIC']).default('PRIVATE'),
   })
-  .strict()
-  .superRefine((value, context) => {
-    if (value.decision === 'RETURN_TO_DRAFT' && !value.reason) {
-      context.addIssue({
-        code: 'custom',
-        path: ['reason'],
-        message: 'A review reason is required when returning an article.',
-      });
-    }
-  });
+  .strict();
+
+export const tagCreateSchema = z
+  .object({
+    slug: z
+      .string()
+      .trim()
+      .min(2)
+      .max(100)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    name: requiredText(2, 100),
+  })
+  .strict();
+
+export const topicCreateSchema = z
+  .object({
+    slug: z
+      .string()
+      .trim()
+      .min(2)
+      .max(100)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    nameHa: requiredText(2, 160),
+    nameEn: z.string().trim().max(160).nullable().default(null),
+  })
+  .strict();
+
+export const catalogIdSchema = z.object({ id: z.uuid() }).strict();
+export const tagUpdateSchema = tagCreateSchema
+  .partial()
+  .extend({ isActive: z.boolean().optional() })
+  .strict();
+export const topicUpdateSchema = topicCreateSchema
+  .partial()
+  .extend({ isActive: z.boolean().optional() })
+  .strict();
+export const contributorUpdateSchema = contributorCreateSchema.partial().strict();
 
 export const listNewsArticlesQuerySchema = z
   .object({
@@ -240,6 +353,35 @@ export const listNewsArticlesQuerySchema = z
     authorId: z.uuid().optional(),
     category: newsCategoryCodeSchema.optional(),
     severity: securityAdvisorySeveritySchema.optional(),
+    view: z
+      .enum([
+        'ALL',
+        'MY_DRAFTS',
+        'ASSIGNED_TO_ME',
+        'NEEDS_REVIEW',
+        'CHANGES_REQUESTED',
+        'READY_TO_PUBLISH',
+        'PUBLISHED_TODAY',
+      ])
+      .default('ALL'),
+    assignedWriterId: z.uuid().optional(),
+    assignedReviewerId: z.uuid().optional(),
+    desk: z
+      .enum([
+        'GENERAL',
+        'POLITICS',
+        'SECURITY',
+        'BUSINESS',
+        'EDUCATION',
+        'HEALTH',
+        'AGRICULTURE',
+        'TECHNOLOGY',
+        'SPORTS',
+        'CULTURE',
+      ])
+      .optional(),
+    priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']).optional(),
+    language: z.enum(['HAUSA_ONLY', 'BILINGUAL']).optional(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -256,7 +398,18 @@ export const newsArticleIdSchema = z.object({ articleId: z.uuid() }).strict();
 
 export type CreateNewsArticleDto = z.infer<typeof createNewsArticleSchema>;
 export type UpdateNewsArticleDto = z.infer<typeof updateNewsArticleSchema>;
-export type NewsArticleDecisionDto = z.infer<typeof newsArticleDecisionSchema>;
+export type NewsArticleDecisionDto = NewsroomWorkflowAction;
+export type NewsArticleAssignmentDto = NewsroomAssignmentUpdate;
+export type NewsArticleMetadataDto = z.infer<typeof newsArticleMetadataSchema>;
+export type NewsArticleMediaDto = ArticleMediaUpdate;
+export type NewsArticlePublishingMetadataDto = ArticlePublishingMetadata;
+export type NewsArticleCorrectionDto = ArticleCorrectionInput;
+export type ContributorCreateDto = z.infer<typeof contributorCreateSchema>;
+export type TagCreateDto = z.infer<typeof tagCreateSchema>;
+export type TopicCreateDto = z.infer<typeof topicCreateSchema>;
+export type TagUpdateDto = z.infer<typeof tagUpdateSchema>;
+export type TopicUpdateDto = z.infer<typeof topicUpdateSchema>;
+export type ContributorUpdateDto = z.infer<typeof contributorUpdateSchema>;
 export type ListNewsArticlesQuery = z.infer<typeof listNewsArticlesQuerySchema>;
 export type NewsArticleId = z.infer<typeof newsArticleIdSchema>;
 

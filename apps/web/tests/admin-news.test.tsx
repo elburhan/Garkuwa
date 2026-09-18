@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AdminNewsDetail } from '../src/components/admin/admin-news-detail';
 import { AdminNewsForm } from '../src/components/admin/admin-news-form';
 import { AdminNewsList } from '../src/components/admin/admin-news-list';
+import { AdminNewsAssignment } from '../src/components/admin/admin-news-assignment';
 import type { AdminPrincipal } from '../src/lib/admin-auth';
 import type { NewsArticle, NewsArticleList, NewsCategories } from '../src/lib/admin-news-api';
 
@@ -57,14 +58,40 @@ const categories: NewsCategories['items'] = [
     isActive: true,
   },
 ];
+const assignees = [
+  { id: 'author-id', displayName: 'Marubucin Gwaji', role: 'EDITOR' },
+  { id: 'reviewer-id', displayName: 'Mai duba', role: 'MODERATOR' },
+];
 const list: NewsArticleList = {
-  items: [article],
+  items: [
+    {
+      id: article.id,
+      slug: article.slug,
+      status: article.status,
+      titleHa: article.titleHa,
+      titleEn: article.titleEn,
+      createdAt: article.createdAt,
+      updatedAt: article.updatedAt,
+      submittedForReviewAt: article.submittedForReviewAt,
+      publishedAt: article.publishedAt,
+      priority: 'NORMAL',
+      desk: null,
+      dueAt: null,
+      author: article.author,
+      assignedWriter: null,
+      assignedReviewer: null,
+      category: article.category,
+      securityAdvisory: null,
+      languageCompleteness: 'HAUSA_ONLY',
+    },
+  ],
   pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
 };
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.useRealTimers();
   refresh.mockReset();
   push.mockReset();
 });
@@ -118,6 +145,7 @@ describe('admin news editorial foundation', () => {
         article={article}
         history={[]}
         categories={categories}
+        assignees={assignees}
       />,
     );
     expect(screen.getByRole('heading', { name: 'Edit draft' })).toBeTruthy();
@@ -130,6 +158,7 @@ describe('admin news editorial foundation', () => {
         article={article}
         history={[]}
         categories={categories}
+        assignees={assignees}
       />,
     );
     expect(screen.queryByRole('heading', { name: 'Edit draft' })).toBeNull();
@@ -160,7 +189,7 @@ describe('admin news editorial foundation', () => {
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
-  it('renders plain-text history and no public preview, rich text, or browser storage', () => {
+  it('renders plain-text history without public preview or rich text', () => {
     render(
       <AdminNewsDetail
         locale="en"
@@ -177,17 +206,48 @@ describe('admin news editorial foundation', () => {
           },
         ]}
         categories={categories}
+        assignees={assignees}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Return for correction' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Request changes' })).toBeTruthy();
     expect(screen.queryByText(/public preview/i)).toBeNull();
     const source = [
       readFileSync(resolve(process.cwd(), 'src/lib/admin-news-mutations.ts'), 'utf8'),
       readFileSync(resolve(process.cwd(), 'src/components/admin/admin-news-form.tsx'), 'utf8'),
     ].join('');
-    expect(source).not.toContain('localStorage');
     expect(source).not.toContain('sessionStorage');
     expect(source).not.toContain('dangerouslySetInnerHTML');
     expect(source).not.toMatch(/markdown|rich-text/i);
+  });
+
+  it('cancels pending autosave when a manual save is submitted first', async () => {
+    vi.useFakeTimers();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ article: { updatedAt: '2026-07-29T10:01:00.000Z' } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    render(<AdminNewsForm locale="en" categories={categories} article={article} />);
+    fireEvent.change(screen.getAllByLabelText('Title')[0]!, {
+      target: { value: 'Updated Hausa title' },
+    });
+    fireEvent.submit(screen.getByRole('button', { name: 'Save draft' }).closest('form')!);
+    await vi.advanceTimersByTimeAsync(2000);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads existing assignment due date into the editable due date field', () => {
+    render(
+      <AdminNewsAssignment
+        locale="en"
+        article={{ ...article, dueAt: '2026-07-30T09:45:00.000Z' }}
+        assignees={assignees}
+      />,
+    );
+    const dueDate = screen.getByLabelText('Due date') as HTMLInputElement;
+    expect(dueDate.value).toBeTruthy();
   });
 });

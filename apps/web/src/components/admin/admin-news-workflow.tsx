@@ -10,16 +10,19 @@ import { transitionNewsArticle, type NewsDecision } from '@/lib/admin-news-mutat
 
 function allowed(article: NewsArticle, principal: AdminPrincipal): NewsDecision[] {
   const admin = principal.role === 'SUPER_ADMIN' || principal.role === 'ADMIN';
-  if (article.status === 'DRAFT' && (admin || article.author.id === principal.id)) {
-    return ['SUBMIT_FOR_REVIEW'];
+  const reviewer = admin || principal.role === 'MODERATOR';
+  if (
+    (article.status === 'DRAFT' || article.status === 'CHANGES_REQUESTED') &&
+    (admin || article.author.id === principal.id)
+  ) {
+    return admin ? ['PUBLISH', 'SUBMIT_FOR_REVIEW'] : ['SUBMIT_FOR_REVIEW'];
   }
   if (article.status === 'IN_REVIEW') {
-    return [
-      ...(admin || principal.role === 'MODERATOR' ? ['RETURN_TO_DRAFT' as const] : []),
-      ...(admin ? ['APPROVE_PUBLICATION' as const] : []),
-    ];
+    return reviewer ? ['REQUEST_CHANGES', ...(admin ? ['PUBLISH' as const] : [])] : [];
   }
-  return article.status === 'PUBLISHED' && admin ? ['ARCHIVE'] : [];
+  if (article.status === 'READY_TO_PUBLISH' && admin) return ['PUBLISH'];
+  if (article.status === 'PUBLISHED' && admin) return ['UNPUBLISH', 'ARCHIVE'];
+  return article.status === 'UNPUBLISHED' && admin ? ['ARCHIVE'] : [];
 }
 
 export function AdminNewsWorkflow({
@@ -30,23 +33,22 @@ export function AdminNewsWorkflow({
   const messages = getMessages(locale).admin.news;
   const router = useRouter();
   const decisions = allowed(article, principal);
-  const [decision, setDecision] = useState<NewsDecision | ''>(decisions[0] ?? '');
+  const [decision, setDecision] = useState<NewsDecision | ''>('');
   const [reason, setReason] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState('');
   if (decisions.length === 0) return null;
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!decision || !confirmed || (decision === 'RETURN_TO_DRAFT' && reason.trim().length < 10)) {
+  async function submitAction(nextDecision: NewsDecision) {
+    if (nextDecision === 'REQUEST_CHANGES' && reason.trim().length < 10) {
       setNotice(messages.validationError);
       return;
     }
     setPending(true);
     const result = await transitionNewsArticle(
       article.id,
-      decision,
+      nextDecision,
       article.updatedAt,
       reason.trim() || undefined,
     );
@@ -61,24 +63,43 @@ export function AdminNewsWorkflow({
     if (result.kind === 'success') router.refresh();
   }
 
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (decision) void submitAction(decision);
+  }
+
   return (
     <form onSubmit={submit} className="admin-news-workflow">
       <fieldset disabled={pending}>
-        <legend>{messages.editorialHistory}</legend>
-        <label htmlFor="news-decision">{messages.status[article.status]}</label>
-        <select
-          id="news-decision"
-          value={decision}
-          onChange={(event) => setDecision(event.target.value as NewsDecision)}
-        >
-          {decisions.map((value) => (
-            <option key={value} value={value}>
-              {messages.decision[value]}
-            </option>
-          ))}
-        </select>
-        {decision === 'RETURN_TO_DRAFT' ? (
-          <>
+        {decisions.map((value) => (
+          <button
+            key={value}
+            type="button"
+            className={value === 'PUBLISH' ? 'button button-primary' : 'button'}
+            onClick={() => {
+              setDecision(value);
+              if (value === 'PUBLISH' && !window.confirm(messages.publishQuestion)) return;
+              if (value === 'REQUEST_CHANGES') {
+                setDecision(value);
+                setReturnDialogOpen(true);
+              } else void submitAction(value);
+            }}
+          >
+            {pending ? messages.saving : messages.decision[value]}
+          </button>
+        ))}
+      </fieldset>
+      {returnDialogOpen ? (
+        <dialog open aria-labelledby="news-review-reason-title">
+          <form
+            method="dialog"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submitAction('REQUEST_CHANGES');
+              setReturnDialogOpen(false);
+            }}
+          >
+            <h2 id="news-review-reason-title">{messages.returnQuestion}</h2>
             <label htmlFor="news-review-reason">{messages.reviewReason}</label>
             <textarea
               id="news-review-reason"
@@ -88,23 +109,19 @@ export function AdminNewsWorkflow({
               maxLength={1000}
               required
             />
-          </>
-        ) : null}
-        {decision === 'APPROVE_PUBLICATION' ? (
-          <p className="admin-read-only-notice">{messages.notPublicWarning}</p>
-        ) : null}
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={confirmed}
-            onChange={(event) => setConfirmed(event.target.checked)}
-          />
-          {messages.confirmAction}
-        </label>
-        <button type="submit" className="button">
-          {pending ? messages.saving : decision ? messages.decision[decision] : messages.saveDraft}
-        </button>
-      </fieldset>
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() => setReturnDialogOpen(false)}
+            >
+              {messages.cancel}
+            </button>
+            <button type="submit" className="button">
+              {messages.returnStory}
+            </button>
+          </form>
+        </dialog>
+      ) : null}
       <p role="status" aria-live="polite">
         {notice}
       </p>

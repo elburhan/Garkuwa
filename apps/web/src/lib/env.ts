@@ -34,4 +34,9 @@ export function parseWebEnvironment(input: NodeJS.ProcessEnv): WebEnvironment {
   return result.data;
 }
 
-export const webEnvironment = parseWebEnvironment(process.env);
+export const webEnvironment = parseWebEnvironment({
+  NODE_ENV: process.env.NODE_ENV,
+  DEPLOYMENT_ENV: process.env.DEPLOYMENT_ENV,
+  NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+});

@@ -202,9 +202,54 @@ validated `WEB_ORIGIN`; CORS uses that same single origin with credentials and n
 wildcard. Production deployment must keep the web and API cookie topology on the same trusted
 site so server-rendered admin pages can forward the cookie for session verification.
 
-No default staff password or user is created. To set or replace the password of an existing staff
-row, provide the password temporarily through the process environment and identify the existing
-normalized email explicitly:
+No default staff password or user is created. For a new local or test database only, the supported
+first-account command creates exactly one active `SUPER_ADMIN`. It refuses production
+configuration and refuses to run when any staff row already exists.
+
+1. Start PostgreSQL, apply migrations, and verify the database:
+
+   ```powershell
+   pnpm docker:up
+   pnpm db:migrate:deploy
+   pnpm db:verify
+   pnpm db:status
+   ```
+
+2. Confirm that the staff table is empty with a count-only query:
+
+   ```powershell
+   docker compose --env-file .env -f infrastructure/docker-compose.yml exec -T postgres `
+     psql -U garkuwa -d garkuwa -tAc "SELECT COUNT(*) FROM staff_users;"
+   ```
+
+   The command uses the repository's example database name and user; adjust both if your local
+   `.env` changes them. The result must be `0`. The CLI repeats this check inside a serializable
+   transaction immediately before creation.
+
+3. Capture a 12–128 character local password without placing it in shell history, create the
+   account, and immediately clear the temporary process variable:
+
+   ```powershell
+   $env:STAFF_BOOTSTRAP_PASSWORD = Read-Host -AsSecureString | ConvertFrom-SecureString -AsPlainText
+   pnpm staff:create-first-admin `
+     --email local.admin@garkuwa.test `
+     --display-name "Local Administrator"
+   Remove-Item Env:STAFF_BOOTSTRAP_PASSWORD
+   ```
+
+4. Start the API and web applications, then open
+   `http://localhost:3000/admin/login`.
+
+`staff:create-first-admin` never creates a session or default credentials, never accepts the
+password as a command-line argument, and is not run during application startup. It is limited to
+the first local/test account, requires `DEPLOYMENT_ENV=local` or `DEPLOYMENT_ENV=test` explicitly,
+and records ordinary account creation/password timestamps without logging the password. Run it
+through the deployment operator's normal audited shell or runbook so the provisioning action is
+traceable. Subsequent staff provisioning requires a separately reviewed administrative workflow.
+There is no production override.
+
+To set or replace the password of an already-existing staff row, provide the password temporarily
+through the process environment and identify the existing normalized email explicitly:
 
 ```powershell
 $env:STAFF_BOOTSTRAP_PASSWORD = Read-Host -AsSecureString | ConvertFrom-SecureString -AsPlainText
@@ -435,9 +480,9 @@ transliterating Hausa Latin letters and adding a bounded numeric suffix for coll
 stable when draft titles change.
 
 `PUBLISHED` means editorially approved for public delivery. The read-only public delivery rules are
-described below. This foundation has no rich-text/HTML storage, Markdown rendering, cover-image
-upload, scheduled publication, article deletion, autosave, analytics, notification, or AI
-writing/translation feature.
+described below. Articles now support the controlled structured blocks and newsroom images described
+below, but there is still no arbitrary HTML or Markdown storage, scheduled publication, article
+deletion, autosave, analytics, notification, or AI writing/translation feature.
 
 Editorial mutations use the existing trusted-origin protection and a per-instance in-memory limit
 of 60 attempts per staff user per 15 minutes. A shared limiter store would be required for multiple
@@ -470,11 +515,11 @@ the active cache interval to appear or disappear. Admin editorial responses rema
 `private, no-store`, and public 404 responses are not assigned the successful-response cache
 header.
 
-Public pages render plain text with preserved paragraphs and localized publication dates. There
-are no author pages, public previews, search, generic category pages, tags, comments, reactions,
-view counters, related-content recommendations, RSS, sitemap, social cards, cover images, scheduled
-publication, analytics, or public mutations. This remains an incremental delivery slice, not a
-production-readiness claim.
+Public pages render validated structured blocks when present, fall back to legacy plain text with
+preserved paragraphs, and show localized publication dates. There are no author pages, public draft
+previews, search, generic category pages, comments, reactions, view counters, related-content
+recommendations, RSS, sitemap, scheduled publication, analytics, or public mutations. This remains
+an incremental delivery slice, not a production-readiness claim.
 
 ### Controlled news categories and Live Updates
 
@@ -501,10 +546,46 @@ Updates and omit the block when none qualify, while ordinary recent news exclude
 to prevent duplication.
 
 Relative timestamps update locally once per minute and retain an accessible exact timestamp.
-Article data does not poll: there is no SSE, WebSocket, background refresh, or claim of technically
-real-time transport. The existing public cache policy applies, so approved Live Updates may take
-up to the active cache interval to appear. Priority, severity, story grouping, RSS, sitemap,
-notifications, rich text, images, scheduling, comments, and analytics remain deferred.
+These `LIVE_UPDATES` category articles remain historical ordinary articles under the normal
+editorial review lifecycle. They are not migrated into, deleted by, or used as the engine for the
+dedicated live coverage described below.
+
+### Dedicated live coverage
+
+New live blogs use the separate `LiveEvent` / `LiveUpdate` models and the admin routes
+`/admin/live` and `/admin/live/:eventId`. Creating an event produces a draft. Authorized live
+publishers explicitly start it, after which authorized editors and moderators may publish concise
+updates directly without the ordinary article review lifecycle. The lifecycle is deliberately
+narrow: `DRAFT -> ACTIVE`, `ACTIVE -> CLOSED`, `CLOSED -> ACTIVE`, and `ACTIVE|CLOSED -> ARCHIVED`.
+Draft archival and all other transitions are rejected. Created, started, ended, reopened, and
+archived operations are recorded with their actor and time.
+
+The API allocates update sequence numbers by atomically incrementing an event-local PostgreSQL
+counter inside the update transaction. Each submission also carries a client UUID idempotency key.
+Updates may be pinned in place, corrected with an immutable previous-version revision and reason,
+or withdrawn with actor, time, and reason while retaining a public placeholder. Live images must
+reference active Phase 3 `NewsroomMedia`; private incident evidence has no relation or conversion
+path into live coverage.
+
+Public indexes are `/live` and `/en/live`; detail routes are `/live/:slug` and
+`/en/live/:slug`. English pages require an English event title and include only updates with an
+English body (plus neutral withdrawn placeholders); Hausa text is never presented as English and
+there is no automatic translation. Active coverage is shown before ended coverage. Ended coverage
+remains public, rejects new updates, and may be explicitly reopened.
+
+Initial detail loading is capped at 20 newest updates and older updates load with a
+`beforeSequence` cursor. The incremental endpoint is
+`GET /api/public/live/:slug/updates?afterSequence=N&changedAfter=ISO_TIMESTAMP`; it is capped at 20
+by default and 50 maximum. The browser polls it every 12 seconds while visible. New updates insert
+normally near the top; a scrolled reader instead sees a new-update indicator, so their position is
+not moved. Corrections, withdrawals, and pin changes are also returned by the narrow incremental
+endpoint. Stable `#update-N` anchors and copy-link controls provide event-local sharing.
+
+Live metadata uses locale-specific canonicals and only advertises an English alternate when the
+event has English content. Featured newsroom media supplies the Open Graph image. `LiveBlogPosting`
+structured data is deferred until a complete and independently validated schema can be emitted;
+no fabricated structured data is published. This phase has polling rather than SSE/WebSockets and
+does not include push notifications, scheduling, comments, analytics, or Redis.
 
 ### Structured security advisories
 
@@ -530,6 +611,48 @@ news excludes both Live Updates and security advisories to prevent duplication. 
 60-second public cache remains in effect; no polling, push delivery, automatic threat feed,
 scanner, alert subscription, geotargeting, taxonomy engine, CVSS calculator, or AI-generated
 advice is included.
+
+## Newsroom media and article publishing
+
+Newsroom media is a separate bounded context from private citizen incident evidence. Editorial
+images use `NewsroomMedia`, the `newsroom/images/` object namespace, and—during filesystem
+development—the separate `NEWSROOM_MEDIA_FILESYSTEM_ROOT`. No incident attachment is copied,
+linked, or promoted automatically. S3-compatible deployments reuse the configured private object
+provider while retaining the distinct namespace; public pages receive only controlled API media
+URLs, never storage keys or filesystem paths.
+
+The first media slice accepts JPEG, PNG, and WebP images up to 8 MiB. The API checks the claimed
+MIME type, filename extension, file signature, and dimensions (maximum 12,000 × 12,000), computes
+a SHA-256 exact-duplicate hint, and requires Hausa alt text. English alt text/caption are optional;
+caption, credit, source, provenance, and internal rights notes are stored separately. The library
+is `/admin/media`; API routes are `POST/GET /api/admin/media`,
+`GET/PATCH /api/admin/media/:mediaId`, `GET /api/admin/media/:mediaId/content`, and
+`PATCH /api/admin/media/:mediaId/archive`. Editors may upload/use, moderators may also edit
+metadata, and administrators may archive. Media referenced by a published article cannot be
+archived.
+
+Draft articles can select one featured image, an optional separate social image, inline images,
+and an ordered gallery through `PATCH /api/admin/news/:articleId/media`. Story revisions retain
+legacy text and may also hold controlled JSON blocks for paragraphs, level-two/three headings,
+bold/italic spans, lists, quotes, HTTP(S) links, image references, and dividers. Arbitrary HTML is
+never accepted or rendered, and old revisions remain readable through the plain-text fallback.
+Unpublished preview uses the authenticated `/admin/news/:articleId/preview` route and forwards the
+HttpOnly staff session only on the server; it does not create a public preview token or discoverable
+draft URL.
+
+Administrators can manage featured/breaking presentation flags and append immutable bilingual
+correction notes. Breaking is permitted only on published stories. Corrections update the explicit
+public update timestamp without silently overwriting their audit record. Public article responses
+include only active featured/gallery media projections, validated story blocks, correction notes,
+publication/update timestamps, and presentation flags. `GET /api/public/news/media/:mediaId`
+streams an active image only when it is referenced by a published story. Featured media supplies
+the Open Graph image; the source-controlled site image is the fallback. Hausa and English article
+canonicals and available-language alternates remain distinct.
+
+This is intentionally a small editorial library, not a digital-asset-management or video system.
+There is no image transformation pipeline, virus scanner, automatic rights decision, permanent
+media deletion, incident-evidence conversion, push delivery, or Muryanmu
+rebrand in this phase.
 
 ## Environment variables
 
@@ -561,6 +684,10 @@ endpoint, region, bucket, access key, secret key, and path-style setting shown i
 The adapter never creates public ACLs or public URLs. `INCIDENT_STORAGE_FILESYSTEM_ROOT` selects
 the local private root (for example `.var/incident-uploads`); never place it beneath
 `apps/web/public`.
+
+`NEWSROOM_MEDIA_FILESYSTEM_ROOT` selects a different local root (for example
+`.var/newsroom-media`) for publishable editorial images. It must also remain outside
+`apps/web/public`; browser delivery always goes through the API public-reference checks.
 
 `TRUST_PROXY` defaults to `false`. Use `loopback` only when the actual deployment has one trusted
 proxy on the same host/network boundary. Incorrect trust can make IP-based abuse controls unsafe.
@@ -594,6 +721,7 @@ pnpm db:status       # compare checked-in migrations with a live database
 pnpm db:verify       # verify PostgreSQL reachability and PostGIS activation
 pnpm env:check       # validate API and web environment configuration
 pnpm release:smoke   # smoke-test running API/web URLs
+pnpm staff:create-first-admin --email local.admin@garkuwa.test --display-name "Local Administrator"
 pnpm staff:set-password --email staff@example.org # explicitly set an existing staff password
 pnpm db:studio       # open Prisma Studio
 pnpm docker:up       # start PostgreSQL/PostGIS

@@ -1,36 +1,44 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 
-import { NewsArticleStatus, StaffRole } from '../../generated/prisma/enums.js';
+import { NewsArticleStatus } from '../../generated/prisma/enums.js';
 import type { StaffPrincipal } from '../auth/auth.types.js';
+import { hasNewsroomCapability } from '../auth/newsroom-capabilities.js';
 import type { NewsArticleDecisionDto } from './dto/news.dto.js';
-
-export const newsViewerRoles = [
-  StaffRole.SUPER_ADMIN,
-  StaffRole.ADMIN,
-  StaffRole.EDITOR,
-  StaffRole.MODERATOR,
-] as const;
-export const newsCreatorRoles = [StaffRole.SUPER_ADMIN, StaffRole.ADMIN, StaffRole.EDITOR] as const;
 
 export const decisionTargetStatus: Record<NewsArticleDecisionDto['decision'], NewsArticleStatus> = {
   SUBMIT_FOR_REVIEW: NewsArticleStatus.IN_REVIEW,
-  RETURN_TO_DRAFT: NewsArticleStatus.DRAFT,
-  APPROVE_PUBLICATION: NewsArticleStatus.PUBLISHED,
+  REQUEST_CHANGES: NewsArticleStatus.CHANGES_REQUESTED,
+  MARK_READY_TO_PUBLISH: NewsArticleStatus.READY_TO_PUBLISH,
+  PUBLISH: NewsArticleStatus.PUBLISHED,
+  UNPUBLISH: NewsArticleStatus.UNPUBLISHED,
   ARCHIVE: NewsArticleStatus.ARCHIVED,
 };
 
-const requiredFromStatus: Record<NewsArticleDecisionDto['decision'], NewsArticleStatus> = {
-  SUBMIT_FOR_REVIEW: NewsArticleStatus.DRAFT,
-  RETURN_TO_DRAFT: NewsArticleStatus.IN_REVIEW,
-  APPROVE_PUBLICATION: NewsArticleStatus.IN_REVIEW,
-  ARCHIVE: NewsArticleStatus.PUBLISHED,
-};
+const allowedFromStatus: Record<NewsArticleDecisionDto['decision'], readonly NewsArticleStatus[]> =
+  {
+    SUBMIT_FOR_REVIEW: [NewsArticleStatus.DRAFT, NewsArticleStatus.CHANGES_REQUESTED],
+    REQUEST_CHANGES: [NewsArticleStatus.IN_REVIEW],
+    MARK_READY_TO_PUBLISH: [NewsArticleStatus.IN_REVIEW, NewsArticleStatus.UNPUBLISHED],
+    PUBLISH: [
+      NewsArticleStatus.DRAFT,
+      NewsArticleStatus.IN_REVIEW,
+      NewsArticleStatus.READY_TO_PUBLISH,
+    ],
+    UNPUBLISH: [NewsArticleStatus.PUBLISHED],
+    ARCHIVE: [NewsArticleStatus.PUBLISHED, NewsArticleStatus.UNPUBLISHED],
+  };
 
-export function assertCanEditDraft(authorId: string, actor: StaffPrincipal): void {
+export function assertCanEditDraft(
+  authorId: string,
+  status: NewsArticleStatus,
+  actor: StaffPrincipal,
+): void {
+  if (status !== NewsArticleStatus.DRAFT && status !== NewsArticleStatus.CHANGES_REQUESTED) {
+    throw new BadRequestException('Only editable newsroom drafts can be changed.');
+  }
   if (
-    actor.role !== StaffRole.SUPER_ADMIN &&
-    actor.role !== StaffRole.ADMIN &&
-    !(actor.role === StaffRole.EDITOR && actor.id === authorId)
+    !hasNewsroomCapability(actor.role, 'NEWS_EDIT_ANY') &&
+    !(hasNewsroomCapability(actor.role, 'NEWS_EDIT_OWN') && actor.id === authorId)
   ) {
     throw new ForbiddenException('This staff account cannot edit this draft.');
   }
@@ -42,15 +50,22 @@ export function assertEditorialDecisionAllowed(
   decision: NewsArticleDecisionDto['decision'],
   actor: StaffPrincipal,
 ): NewsArticleStatus {
-  if (currentStatus !== requiredFromStatus[decision]) {
+  if (!allowedFromStatus[decision].includes(currentStatus)) {
     throw new BadRequestException('The requested editorial transition is not allowed.');
   }
-  const administrators = actor.role === StaffRole.SUPER_ADMIN || actor.role === StaffRole.ADMIN;
   const allowed =
     (decision === 'SUBMIT_FOR_REVIEW' &&
-      (administrators || (actor.role === StaffRole.EDITOR && actor.id === authorId))) ||
-    (decision === 'RETURN_TO_DRAFT' && (administrators || actor.role === StaffRole.MODERATOR)) ||
-    ((decision === 'APPROVE_PUBLICATION' || decision === 'ARCHIVE') && administrators);
+      hasNewsroomCapability(actor.role, 'NEWS_SUBMIT_REVIEW') &&
+      (actor.id === authorId || hasNewsroomCapability(actor.role, 'NEWS_EDIT_ANY'))) ||
+    (decision === 'REQUEST_CHANGES' &&
+      hasNewsroomCapability(actor.role, 'NEWS_REVIEW') &&
+      hasNewsroomCapability(actor.role, 'NEWS_RETURN_FOR_CHANGES')) ||
+    (decision === 'MARK_READY_TO_PUBLISH' &&
+      hasNewsroomCapability(actor.role, 'NEWS_REVIEW') &&
+      hasNewsroomCapability(actor.role, 'NEWS_MARK_READY')) ||
+    (decision === 'PUBLISH' && hasNewsroomCapability(actor.role, 'NEWS_PUBLISH')) ||
+    (decision === 'UNPUBLISH' && hasNewsroomCapability(actor.role, 'NEWS_UNPUBLISH')) ||
+    (decision === 'ARCHIVE' && hasNewsroomCapability(actor.role, 'NEWS_ARCHIVE'));
   if (!allowed) throw new ForbiddenException('This staff account cannot perform this action.');
   return decisionTargetStatus[decision];
 }

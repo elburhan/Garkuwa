@@ -35,8 +35,12 @@ describe('NewsService', () => {
   const categoryFindFirst = jest.fn<(input: unknown) => Promise<unknown>>();
   const advisoryDeleteMany = jest.fn<(input: unknown) => Promise<unknown>>();
   const advisoryUpsert = jest.fn<(input: unknown) => Promise<unknown>>();
+  const revisionFindFirst =
+    jest.fn<(input: unknown) => Promise<{ revisionNumber: number } | null>>();
+  const revisionCreate = jest.fn<(input: unknown) => Promise<{ id: string }>>();
   const transactionClient = {
     newsArticle: { findUnique, updateMany, findUniqueOrThrow },
+    newsArticleRevision: { findFirst: revisionFindFirst, create: revisionCreate },
     newsArticleStatusHistory: { create: historyCreate },
     newsSecurityAdvisory: { deleteMany: advisoryDeleteMany, upsert: advisoryUpsert },
   };
@@ -52,11 +56,16 @@ describe('NewsService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     categoryFindFirst.mockResolvedValue({ id: 'category-id' });
+    revisionFindFirst.mockResolvedValue({ revisionNumber: 1 });
+    revisionCreate.mockResolvedValue({ id: 'revision-2' });
     findUnique.mockResolvedValue({
       id: articleId,
       authorId: actor.id,
       status: NewsArticleStatus.DRAFT,
       updatedAt: expected,
+      draftRevisionId: 'revision-1',
+      submittedRevisionId: null,
+      submittedRevision: null,
       category: { isActive: true },
     });
     updateMany.mockResolvedValue({ count: 1 });
@@ -89,13 +98,18 @@ describe('NewsService', () => {
       expect.objectContaining({
         where: {
           id: articleId,
-          status: NewsArticleStatus.DRAFT,
+          status: { in: [NewsArticleStatus.DRAFT, NewsArticleStatus.CHANGES_REQUESTED] },
           updatedAt: expected,
         },
         data: expect.not.objectContaining({ slug: expect.anything() }),
       }),
     );
     expect(result.article.slug).toBe('sanarwar-tsaro');
+    expect(revisionCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ revisionNumber: 2, createdById: actor.id }),
+      }),
+    );
   });
 
   it('blocks another editor and stale content without writing', async () => {
@@ -164,5 +178,154 @@ describe('NewsService', () => {
       ),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(historyCreate).not.toHaveBeenCalled();
+  });
+
+  it('classifies bilingual completeness only when English title, summary, and body are all present', async () => {
+    const listService = new NewsService(
+      {
+        $transaction: jest.fn(async (operations: unknown[]) =>
+          Promise.all(operations as Promise<unknown>[]),
+        ),
+        newsArticle: {
+          count: jest.fn(async () => 2),
+          findMany: jest.fn(async () => [
+            {
+              id: articleId,
+              slug: 'one',
+              status: NewsArticleStatus.DRAFT,
+              titleHa: 'Title',
+              titleEn: 'English title',
+              summaryEn: null,
+              bodyEn: null,
+              createdAt: expected,
+              updatedAt: expected,
+              submittedForReviewAt: null,
+              publishedAt: null,
+              desk: null,
+              dueAt: null,
+              priority: 'NORMAL',
+              author: { id: actor.id, displayName: actor.name },
+              assignedWriter: null,
+              assignedReviewer: null,
+              category: { code: 'NEWS', slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
+              securityAdvisory: null,
+            },
+            {
+              id: '1f17f1a7-f1c8-46b9-8fec-bafd3964b543',
+              slug: 'two',
+              status: NewsArticleStatus.DRAFT,
+              titleHa: 'Title',
+              titleEn: 'English title',
+              summaryEn: 'English summary',
+              bodyEn: 'English body',
+              createdAt: expected,
+              updatedAt: expected,
+              submittedForReviewAt: null,
+              publishedAt: null,
+              desk: null,
+              dueAt: null,
+              priority: 'NORMAL',
+              author: { id: actor.id, displayName: actor.name },
+              assignedWriter: null,
+              assignedReviewer: null,
+              category: { code: 'NEWS', slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
+              securityAdvisory: null,
+            },
+          ]),
+        },
+      } as unknown as PrismaService,
+      () => changed.getTime(),
+    );
+
+    const result = await listService.list({ page: 1, pageSize: 20, view: 'ALL' }, actor);
+    expect(result.items[0]!.languageCompleteness).toBe('HAUSA_ONLY');
+    expect(result.items[1]!.languageCompleteness).toBe('BILINGUAL');
+  });
+
+  it('redacts confidential source details for non-publisher roles in article detail responses', async () => {
+    const detailService = new NewsService(
+      {
+        newsArticle: {
+          findUnique: jest.fn(async () => ({
+            id: articleId,
+            slug: 'sanarwar-tsaro',
+            status: NewsArticleStatus.IN_REVIEW,
+            titleHa: 'Sanarwar Tsaro',
+            summaryHa: 'Wannan taƙaitaccen bayanin gwaji ne na sashen edita.',
+            bodyHa: `Cikakken rubutun gwaji ne. ${'Bayani '.repeat(20)}`,
+            titleEn: null,
+            summaryEn: null,
+            bodyEn: null,
+            createdAt: expected,
+            updatedAt: changed,
+            submittedForReviewAt: changed,
+            publishedAt: null,
+            archivedAt: null,
+            draftRevisionId: 'draft-1',
+            submittedRevisionId: 'submitted-1',
+            publishedRevisionId: null,
+            desk: null,
+            dueAt: null,
+            priority: 'NORMAL',
+            author: { id: actor.id, displayName: actor.name },
+            category: { code: 'NEWS', slug: 'news', nameHa: 'Labarai', nameEn: 'News' },
+            securityAdvisory: null,
+            assignedWriter: null,
+            assignedReviewer: null,
+            revisions: [],
+            contributors: [],
+            tags: [],
+            topics: [],
+            locations: [],
+            sources: [
+              {
+                id: 'source-public',
+                type: 'OFFICIAL_STATEMENT',
+                publicLabel: 'Official statement',
+                url: 'https://example.org/statement',
+                organization: 'Kaduna State Government',
+                confidential: false,
+                internalNotes: 'editorial-only note',
+              },
+              {
+                id: 'source-confidential',
+                type: 'INTERVIEW',
+                publicLabel: null,
+                url: 'https://example.org/private',
+                organization: 'Private witness',
+                confidential: true,
+                internalNotes: 'do not disclose identity',
+              },
+            ],
+            assignmentHistory: [],
+          })),
+        },
+        newsArticleSourceAccessAudit: {
+          createMany: jest.fn(async () => ({ count: 1 })),
+        },
+      } as unknown as PrismaService,
+      () => changed.getTime(),
+    );
+
+    const editor = await detailService.detail(articleId, actor);
+    expect(editor.article.sources[0]).toMatchObject({
+      url: 'https://example.org/statement',
+      internalNotes: null,
+    });
+    expect(editor.article.sources[1]).toMatchObject({
+      url: null,
+      organization: null,
+      internalNotes: null,
+    });
+
+    const admin = await detailService.detail(articleId, {
+      ...actor,
+      role: StaffRole.ADMIN,
+    });
+    expect(admin.article.sources[1]).toMatchObject({
+      url: 'https://example.org/private',
+      organization: 'Private witness',
+      internalNotes: 'do not disclose identity',
+    });
   });
 });

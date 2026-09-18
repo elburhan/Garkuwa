@@ -4,6 +4,9 @@ import { NewsArticleStatus, StaffRole } from '../src/generated/prisma/enums.js';
 import type { StaffPrincipal } from '../src/modules/auth/auth.types.js';
 import {
   createNewsArticleSchema,
+  newsArticleCorrectionSchema,
+  newsArticleMediaSchema,
+  newsArticlePublishingMetadataSchema,
   newsArticleDecisionSchema,
   updateNewsArticleSchema,
 } from '../src/modules/news/dto/news.dto.js';
@@ -167,17 +170,45 @@ describe('news validation and editorial policy', () => {
   it('requires a bounded return reason and expected timestamp', () => {
     expect(() =>
       newsArticleDecisionSchema.parse({
-        decision: 'RETURN_TO_DRAFT',
+        decision: 'REQUEST_CHANGES',
         expectedUpdatedAt: new Date().toISOString(),
       }),
     ).toThrow();
     expect(
       newsArticleDecisionSchema.parse({
-        decision: 'RETURN_TO_DRAFT',
+        decision: 'REQUEST_CHANGES',
         reason: '  Please correct the named sourcing paragraph.  ',
         expectedUpdatedAt: '2026-07-29T10:00:00.000Z',
       }).reason,
     ).toBe('Please correct the named sourcing paragraph.');
+  });
+
+  it('validates article media, publishing flags and auditable corrections strictly', () => {
+    const expectedUpdatedAt = '2026-09-15T10:00:00.000Z';
+    expect(
+      newsArticleMediaSchema.parse({
+        featuredMediaId: null,
+        socialMediaId: null,
+        galleryMediaIds: [],
+        inlineMediaIds: [],
+        expectedUpdatedAt,
+      }),
+    ).toBeTruthy();
+    expect(() =>
+      newsArticlePublishingMetadataSchema.parse({
+        isFeatured: true,
+        isBreaking: false,
+        expectedUpdatedAt,
+        hidden: true,
+      }),
+    ).toThrow();
+    expect(
+      newsArticleCorrectionSchema.parse({
+        noteHa: '  An gyara muhimmin lokacin da aka ambata.  ',
+        noteEn: null,
+        expectedUpdatedAt,
+      }).noteHa,
+    ).toBe('An gyara muhimmin lokacin da aka ambata.');
   });
 
   it('creates stable URL-safe Hausa slugs with bounded collision suffixes', () => {
@@ -192,10 +223,12 @@ describe('news validation and editorial policy', () => {
   });
 
   it('enforces draft ownership and the exact lifecycle authorization matrix', () => {
-    expect(() => assertCanEditDraft('author-id', actor(StaffRole.EDITOR))).not.toThrow();
-    expect(() => assertCanEditDraft('other-id', actor(StaffRole.EDITOR))).toThrow(
-      ForbiddenException,
-    );
+    expect(() =>
+      assertCanEditDraft('author-id', NewsArticleStatus.DRAFT, actor(StaffRole.EDITOR)),
+    ).not.toThrow();
+    expect(() =>
+      assertCanEditDraft('other-id', NewsArticleStatus.DRAFT, actor(StaffRole.EDITOR)),
+    ).toThrow(ForbiddenException);
     expect(
       assertEditorialDecisionAllowed(
         NewsArticleStatus.DRAFT,
@@ -208,15 +241,23 @@ describe('news validation and editorial policy', () => {
       assertEditorialDecisionAllowed(
         NewsArticleStatus.IN_REVIEW,
         'author-id',
-        'RETURN_TO_DRAFT',
+        'REQUEST_CHANGES',
         actor(StaffRole.MODERATOR),
       ),
-    ).toBe(NewsArticleStatus.DRAFT);
+    ).toBe(NewsArticleStatus.CHANGES_REQUESTED);
+    expect(
+      assertEditorialDecisionAllowed(
+        NewsArticleStatus.UNPUBLISHED,
+        'author-id',
+        'MARK_READY_TO_PUBLISH',
+        actor(StaffRole.MODERATOR),
+      ),
+    ).toBe(NewsArticleStatus.READY_TO_PUBLISH);
     expect(() =>
       assertEditorialDecisionAllowed(
-        NewsArticleStatus.IN_REVIEW,
+        NewsArticleStatus.READY_TO_PUBLISH,
         'author-id',
-        'APPROVE_PUBLICATION',
+        'PUBLISH',
         actor(StaffRole.EDITOR),
       ),
     ).toThrow(ForbiddenException);

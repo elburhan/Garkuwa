@@ -10,6 +10,7 @@ const baseEnvironment: NodeJS.ProcessEnv = {
   TRUST_PROXY: 'false',
   INCIDENT_STORAGE_DRIVER: 'filesystem',
   INCIDENT_STORAGE_FILESYSTEM_ROOT: '.var/test-uploads',
+  NEWSROOM_MEDIA_FILESYSTEM_ROOT: '.var/test-newsroom-media',
 };
 
 describe('API environment validation', () => {

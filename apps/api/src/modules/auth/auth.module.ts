@@ -10,6 +10,7 @@ import { StaffLoginRateLimitGuard } from './staff-login-rate-limit.guard.js';
 import { StaffSessionGuard } from './staff-session.guard.js';
 import { StaffSessionService } from './staff-session.service.js';
 import { StaffRolesGuard } from './staff-roles.guard.js';
+import { NewsroomCapabilitiesGuard } from './newsroom-capabilities.guard.js';
 
 @Module({
   controllers: [StaffAuthController],
@@ -19,6 +20,7 @@ import { StaffRolesGuard } from './staff-roles.guard.js';
     StaffSessionService,
     StaffSessionGuard,
     StaffRolesGuard,
+    NewsroomCapabilitiesGuard,
     StaffAuthOriginGuard,
     JsonContentTypeGuard,
     StaffLoginRateLimitGuard,
@@ -28,6 +30,7 @@ import { StaffRolesGuard } from './staff-roles.guard.js';
     StaffSessionGuard,
     StaffSessionService,
     StaffRolesGuard,
+    NewsroomCapabilitiesGuard,
     StaffAuthOriginGuard,
     JsonContentTypeGuard,
   ],

@@ -10,6 +10,8 @@ import {
 } from '@/lib/admin-operations-dashboard-api';
 
 import { AdminLogoutButton } from './admin-logout-button';
+import { AdminNewsroomOverview } from './admin-newsroom-overview';
+import type { NewsroomDashboard } from '@/lib/admin-news-api';
 
 function maximumCount(rows: readonly { count: number }[]): number {
   return Math.max(1, ...rows.map((row) => row.count));
@@ -20,11 +22,13 @@ export function AdminOperationsDashboard({
   principal,
   dashboard,
   apiBaseUrl,
+  newsroom,
 }: Readonly<{
   locale: Locale;
   principal: AdminPrincipal;
   dashboard: OperationsDashboard;
   apiBaseUrl: string;
+  newsroom?: NewsroomDashboard;
 }>) {
   const messages = getMessages(locale).admin;
   const dashboardMessages = messages.dashboard;
@@ -119,6 +123,8 @@ export function AdminOperationsDashboard({
           </Link>
         </nav>
       </header>
+
+      {newsroom ? <AdminNewsroomOverview locale={locale} dashboard={newsroom} /> : null}
 
       <div className="admin-dashboard-actions">
         <nav aria-label={dashboardMessages.selectedPeriod}>

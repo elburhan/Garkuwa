@@ -8,7 +8,7 @@ const workspaceEnvironmentPath = fileURLToPath(new URL('../../.env', import.meta
 loadEnv({ path: workspaceEnvironmentPath, quiet: true });
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@garkuwa/i18n'],
+  transpilePackages: ['@garkuwa/i18n', '@garkuwa/contracts'],
   poweredByHeader: false,
   async headers() {
     const headers = [

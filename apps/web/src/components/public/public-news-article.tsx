@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
 import { getMessages, getPublicPath, type Locale } from '@/i18n';
-import type { PublicNewsDetail } from '@/lib/public-news-api';
+import { publicNewsMediaUrl, type PublicNewsDetail } from '@/lib/public-news-api';
+import { RichArticleBody } from './rich-article-body';
 
 export function PublicNewsArticle({
   article,
@@ -11,7 +12,9 @@ export function PublicNewsArticle({
   const dateLocale = locale === 'ha' ? 'ha-NG' : 'en-NG';
   const haHref = `/news/${article.slug}`;
   const enHref = `/en/news/${article.slug}`;
-  const paragraphs = article.body.split(/\r?\n\s*\r?\n/);
+  const media = [article.featuredMedia, ...article.gallery.map((item) => item.media)]
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .map((item) => ({ ...item, url: publicNewsMediaUrl(item.url) }));
 
   return (
     <article className="content-width section-spacing public-news-article">
@@ -21,6 +24,7 @@ export function PublicNewsArticle({
           {copy.categoryLabel}: {article.category.name}
         </p>
         <h1>{article.title}</h1>
+        {article.isBreaking ? <p className="eyebrow">{copy.breakingLabel}</p> : null}
         <p className="publication-date">
           {copy.publishedOn}{' '}
           <time dateTime={article.publishedAt}>
@@ -29,7 +33,29 @@ export function PublicNewsArticle({
             )}
           </time>
         </p>
+        {article.updatedAt !== article.publishedAt ? (
+          <p className="publication-date">
+            {copy.updatedOn}{' '}
+            <time dateTime={article.updatedAt}>
+              {new Intl.DateTimeFormat(dateLocale, {
+                dateStyle: 'long',
+                timeStyle: 'short',
+              }).format(new Date(article.updatedAt))}
+            </time>
+          </p>
+        ) : null}
         <p className="article-summary">{article.summary}</p>
+        {article.contributors && article.contributors.length > 0 ? (
+          <ul className="article-bylines" aria-label={copy.byline}>
+            {article.contributors.map((contributor) => (
+              <li key={`${contributor.slug}-${contributor.contributorRole}`}>
+                {contributor.contributorRole === 'AUTHOR'
+                  ? `${copy.by}: ${contributor.displayName}`
+                  : `${copy.reportingBy}: ${contributor.displayName}`}
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </header>
 
       <nav className="news-language-links" aria-label={copy.languageLabel}>
@@ -55,11 +81,67 @@ export function PublicNewsArticle({
         )}
       </nav>
 
+      {article.featuredMedia ? (
+        <figure className="public-news-hero">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={publicNewsMediaUrl(article.featuredMedia.url)}
+            alt={article.featuredMedia.altText}
+            width={article.featuredMedia.width}
+            height={article.featuredMedia.height}
+            fetchPriority="high"
+          />
+          {article.featuredMedia.caption || article.featuredMedia.credit ? (
+            <figcaption>
+              {article.featuredMedia.caption}
+              {article.featuredMedia.caption && article.featuredMedia.credit ? ' · ' : ''}
+              {article.featuredMedia.credit}
+            </figcaption>
+          ) : null}
+        </figure>
+      ) : null}
+
       <div className="article-body content-narrow">
-        {paragraphs.map((paragraph, index) => (
-          <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
-        ))}
+        <RichArticleBody blocks={article.bodyBlocks} fallback={article.body} media={media} />
       </div>
+
+      {article.gallery.length > 0 ? (
+        <section aria-label={copy.galleryLabel} className="public-news-gallery">
+          {article.gallery.map(({ media: item }) => (
+            <figure key={item.id}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={publicNewsMediaUrl(item.url)}
+                alt={item.altText}
+                width={item.width}
+                height={item.height}
+                loading="lazy"
+              />
+              {item.caption || item.credit ? (
+                <figcaption>
+                  {item.caption}
+                  {item.caption && item.credit ? ' · ' : ''}
+                  {item.credit}
+                </figcaption>
+              ) : null}
+            </figure>
+          ))}
+        </section>
+      ) : null}
+
+      {article.corrections.map((correction) => (
+        <aside key={correction.id} className="admin-read-only-notice">
+          <strong>
+            {copy.correctionLabel} —{' '}
+            <time dateTime={correction.createdAt}>
+              {new Intl.DateTimeFormat(dateLocale, { dateStyle: 'medium' }).format(
+                new Date(correction.createdAt),
+              )}
+            </time>
+          </strong>
+          <p>{correction.note}</p>
+        </aside>
+      ))}
 
       {article.securityAdvisory ? (
         <aside className="content-narrow advisory-panel" aria-labelledby="public-advisory-title">

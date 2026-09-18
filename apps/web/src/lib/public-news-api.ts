@@ -1,59 +1,17 @@
 import { z } from 'zod';
+import {
+  publicNewsDetailSchema,
+  publicNewsListSchema,
+  type PublicNewsDetail,
+  type PublicNewsItem,
+  type PublicNewsList,
+} from '@garkuwa/contracts/media';
 
 import type { Locale } from '@/i18n';
 
 import { webEnvironment } from './env';
 
-const httpsUrlSchema = z.url().refine((value) => {
-  const url = new URL(value);
-  return url.protocol === 'https:' && !url.username && !url.password;
-});
-
-const publicNewsItemSchema = z.object({
-  slug: z.string(),
-  title: z.string(),
-  summary: z.string(),
-  publishedAt: z.iso.datetime({ offset: true }),
-  hasEnglishTranslation: z.boolean(),
-  category: z.object({ slug: z.string(), name: z.string() }),
-  securityAdvisory: z
-    .object({
-      severity: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL']),
-    })
-    .nullable(),
-});
-const publicNewsListSchema = z.object({
-  generatedAt: z.iso.datetime({ offset: true }),
-  items: z.array(publicNewsItemSchema),
-  pagination: z.object({
-    page: z.number().int().positive(),
-    pageSize: z.number().int().positive(),
-    totalItems: z.number().int().nonnegative(),
-    totalPages: z.number().int().nonnegative(),
-  }),
-});
-const publicNewsDetailSchema = publicNewsItemSchema.extend({
-  body: z.string(),
-  securityAdvisory: z
-    .object({
-      severity: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL']),
-      affectedArea: z.string(),
-      recommendedActions: z.string(),
-      references: z
-        .array(
-          z.object({
-            label: z.string(),
-            url: httpsUrlSchema,
-          }),
-        )
-        .max(10),
-    })
-    .nullable(),
-});
-
-export type PublicNewsItem = z.infer<typeof publicNewsItemSchema>;
-export type PublicNewsList = z.infer<typeof publicNewsListSchema>;
-export type PublicNewsDetail = z.infer<typeof publicNewsDetailSchema>;
+export type { PublicNewsItem, PublicNewsList, PublicNewsDetail };
 export type PublicNewsResult<T> =
   { kind: 'success'; data: T } | { kind: 'not-found' | 'invalid' | 'unavailable' };
 
@@ -85,6 +43,10 @@ export function parsePublicAdvisorySeverity(
 
 function apiUrl(path: string): string {
   return `${webEnvironment.NEXT_PUBLIC_API_BASE_URL.replace(/\/+$/, '')}/${path}`;
+}
+
+export function publicNewsMediaUrl(path: string): string {
+  return path.startsWith('http') ? path : apiUrl(path.replace(/^\/+api\//, ''));
 }
 
 async function publicNewsFetch<T>(

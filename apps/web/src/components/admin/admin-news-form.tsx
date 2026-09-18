@@ -1,11 +1,16 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { getMessages, type Locale } from '@/i18n';
 import type { NewsArticle, NewsCategories } from '@/lib/admin-news-api';
-import { createNewsArticle, updateNewsArticle } from '@/lib/admin-news-mutations';
+import {
+  createNewsArticle,
+  updateNewsArticle,
+  updateNewsMetadata,
+} from '@/lib/admin-news-mutations';
+import { buildStructuredArticleBody } from '@/lib/structured-article-content';
 
 type Content = {
   categoryCode: string;
@@ -24,6 +29,35 @@ type AdvisoryDraft = {
   recommendedActionsEn: string;
   references: { label: string; url: string }[];
 };
+type MetadataDraft = {
+  contributors: { contributorId: string; role: string; displayOrder: number }[];
+  tagIds: string[];
+  topicIds: string[];
+  locations: { country: string; state: string | null; lga: string | null; place: string | null }[];
+  sources: {
+    type: string;
+    publicLabel: string | null;
+    organization: string | null;
+    url: string | null;
+    confidential: boolean;
+    internalNotes: string | null;
+    displayOrder: number;
+  }[];
+};
+type ContributorProjection = {
+  role: string;
+  displayOrder?: number;
+  contributor: { id: string; displayName: string };
+};
+type TagProjection = { tag: { id: string } };
+type TopicProjection = { topic: { id: string } };
+type LocationProjection = {
+  country: string;
+  state: string | null;
+  lga: string | null;
+  place: string | null;
+};
+type SourceProjection = MetadataDraft['sources'][number] & { displayOrder?: number };
 const emptyContent: Content = {
   categoryCode: '',
   titleHa: '',
@@ -80,6 +114,47 @@ function valid(content: Content, advisory: AdvisoryDraft): boolean {
   return hausa && english && advisoryValid;
 }
 
+function buildMutationPayload(content: Content, advisory: AdvisoryDraft): Record<string, unknown> {
+  const payload: Record<string, unknown> = Object.fromEntries(
+    Object.entries(content).map(([key, value]) => [key, value.trim() || null]),
+  );
+  payload.securityAdvisory =
+    content.categoryCode === 'SECURITY_ADVISORIES'
+      ? {
+          severity: advisory.severity,
+          affectedAreaHa: advisory.affectedAreaHa.trim(),
+          affectedAreaEn: advisory.affectedAreaEn.trim() || null,
+          recommendedActionsHa: advisory.recommendedActionsHa.trim(),
+          recommendedActionsEn: advisory.recommendedActionsEn.trim() || null,
+          references: advisory.references.map((reference) => ({
+            label: reference.label.trim(),
+            url: reference.url.trim(),
+          })),
+        }
+      : null;
+  payload.bodyBlocksHa = buildStructuredArticleBody(content.bodyHa);
+  payload.bodyBlocksEn = content.bodyEn.trim()
+    ? buildStructuredArticleBody(content.bodyEn)
+    : undefined;
+  return payload;
+}
+
+function readRecovery(article: NewsArticle | undefined): Content | null {
+  if (!article || typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(`garkuwa:news-recovery:${article.id}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { savedAt?: string; content?: Content };
+    return parsed.content &&
+      typeof parsed.savedAt === 'string' &&
+      new Date(parsed.savedAt).getTime() > new Date(article.updatedAt).getTime()
+      ? parsed.content
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AdminNewsForm({
   locale,
   categories,
@@ -115,14 +190,106 @@ export function AdminNewsForm({
   );
   const [notice, setNotice] = useState('');
   const [invalid, setInvalid] = useState(false);
+  const [language, setLanguage] = useState<'ha' | 'en'>('ha');
+  const contributorProjections = (article?.contributors ?? []) as ContributorProjection[];
+  const tagProjections = (article?.tags ?? []) as TagProjection[];
+  const topicProjections = (article?.topics ?? []) as TopicProjection[];
+  const locationProjections = (article?.locations ?? []) as LocationProjection[];
+  const sourceProjections = (article?.sources ?? []) as SourceProjection[];
+  const [metadata, setMetadata] = useState<MetadataDraft>({
+    contributors:
+      contributorProjections.map((item, index) => ({
+        contributorId: item.contributor.id,
+        role: item.role,
+        displayOrder: item.displayOrder ?? index,
+      })) ?? [],
+    tagIds: tagProjections.map((item) => item.tag.id),
+    topicIds: topicProjections.map((item) => item.topic.id),
+    locations:
+      locationProjections.map((location) => ({
+        country: location.country,
+        state: location.state,
+        lga: location.lga,
+        place: location.place,
+      })) ?? [],
+    sources: sourceProjections.map((source, index) => ({
+      type: source.type,
+      publicLabel: source.publicLabel,
+      organization: source.organization,
+      url: source.url,
+      confidential: source.confidential,
+      internalNotes: source.internalNotes,
+      displayOrder: source.displayOrder ?? index,
+    })),
+  });
+  const hasMetadata =
+    metadata.contributors.length > 0 ||
+    metadata.tagIds.length > 0 ||
+    metadata.topicIds.length > 0 ||
+    metadata.locations.length > 0 ||
+    metadata.sources.length > 0;
+  const [recovery, setRecovery] = useState<Content | null>(() => readRecovery(article));
+  const version = useRef(article?.updatedAt ?? '');
+  const lastSaved = useRef(JSON.stringify({ content, advisory }));
+  const autosaveTimer = useRef<number | null>(null);
   const limits =
     content.categoryCode === 'LIVE_UPDATES'
       ? { title: 140, summaryMin: 10, summary: 280, bodyMin: 20, body: 1000 }
       : { title: 180, summaryMin: 20, summary: 500, bodyMin: 100, body: 50_000 };
+  const recoveryKey = article ? `garkuwa:news-recovery:${article.id}` : null;
+
+  useEffect(() => {
+    if (!recoveryKey) return;
+    window.localStorage.setItem(
+      recoveryKey,
+      JSON.stringify({ savedAt: new Date().toISOString(), content }),
+    );
+  }, [content, recoveryKey]);
 
   const change =
     (field: keyof Content) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setContent((current) => ({ ...current, [field]: event.target.value }));
+
+  useEffect(() => {
+    if (!article || pending || !valid(content, advisory)) return;
+    const snapshot = JSON.stringify({ content, advisory });
+    if (snapshot === lastSaved.current) return;
+    if (autosaveTimer.current !== null) {
+      window.clearTimeout(autosaveTimer.current);
+    }
+    autosaveTimer.current = window.setTimeout(async () => {
+      setNotice(messages.saving);
+      let result = await updateNewsArticle(
+        article.id,
+        buildMutationPayload(content, advisory),
+        version.current,
+      );
+      if (result.kind === 'error') {
+        await new Promise((resolve) => window.setTimeout(resolve, 800));
+        result = await updateNewsArticle(
+          article.id,
+          buildMutationPayload(content, advisory),
+          version.current,
+        );
+      }
+      if (result.kind === 'success') {
+        const value = result.data as { article?: { updatedAt?: unknown } };
+        if (typeof value.article?.updatedAt === 'string') version.current = value.article.updatedAt;
+        lastSaved.current = snapshot;
+        setNotice(messages.savedAutomatically);
+        if (recoveryKey) window.localStorage.removeItem(recoveryKey);
+        router.refresh();
+      } else {
+        setNotice(result.kind === 'conflict' ? messages.conflict : messages.saveFailed);
+      }
+    }, 1500);
+    return () => {
+      if (autosaveTimer.current !== null) {
+        window.clearTimeout(autosaveTimer.current);
+        autosaveTimer.current = null;
+      }
+    };
+  }, [content, advisory, article, messages, pending, recoveryKey, router]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -134,31 +301,25 @@ export function AdminNewsForm({
     }
     setInvalid(false);
     setPending(true);
-    const payload: Record<string, unknown> = Object.fromEntries(
-      Object.entries(content).map(([key, value]) => [key, value.trim() || null]),
-    );
-    payload.securityAdvisory =
-      content.categoryCode === 'SECURITY_ADVISORIES'
-        ? {
-            severity: advisory.severity,
-            affectedAreaHa: advisory.affectedAreaHa.trim(),
-            affectedAreaEn: advisory.affectedAreaEn.trim() || null,
-            recommendedActionsHa: advisory.recommendedActionsHa.trim(),
-            recommendedActionsEn: advisory.recommendedActionsEn.trim() || null,
-            references: advisory.references.map((reference) => ({
-              label: reference.label.trim(),
-              url: reference.url.trim(),
-            })),
-          }
-        : null;
+    if (autosaveTimer.current !== null) {
+      window.clearTimeout(autosaveTimer.current);
+      autosaveTimer.current = null;
+    }
+    const payload = buildMutationPayload(content, advisory);
     const result = article
-      ? await updateNewsArticle(article.id, payload, article.updatedAt)
+      ? await updateNewsArticle(article.id, payload, version.current)
       : await createNewsArticle(payload);
     setPending(false);
     if (result.kind === 'success') {
       setNotice(article ? messages.saved : messages.createdMessage);
-      if (article) router.refresh();
-      else router.push(`/admin/news${locale === 'en' ? '?lang=en' : ''}`);
+      if (article) {
+        if (hasMetadata) await updateNewsMetadata(article.id, metadata, version.current);
+        const value = result.data as { article?: { updatedAt?: unknown } };
+        if (typeof value.article?.updatedAt === 'string') version.current = value.article.updatedAt;
+        lastSaved.current = JSON.stringify({ content, advisory });
+        if (recoveryKey) window.localStorage.removeItem(recoveryKey);
+        router.refresh();
+      } else router.push(`/admin/news${locale === 'en' ? '?lang=en' : ''}`);
     } else {
       setNotice(result.kind === 'conflict' ? messages.conflict : messages.actionFailed);
     }
@@ -202,7 +363,32 @@ export function AdminNewsForm({
 
   return (
     <form onSubmit={submit} className="admin-news-form" noValidate>
-      <p className="field-help">{messages.plainTextGuidance}</p>
+      {recovery ? (
+        <aside className="admin-read-only-notice" role="status">
+          <p>{messages.recoveryFound}</p>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => {
+              setContent(recovery);
+              setRecovery(null);
+            }}
+          >
+            {messages.reviewRecovery}
+          </button>{' '}
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => {
+              if (recoveryKey) window.localStorage.removeItem(recoveryKey);
+              setRecovery(null);
+            }}
+          >
+            {messages.discardRecovery}
+          </button>
+        </aside>
+      ) : null}
+      <p className="field-help">{messages.structuredTextGuidance}</p>
       <div className="admin-news-field">
         <label htmlFor="news-category">{messages.category}</label>
         <select
@@ -237,127 +423,226 @@ export function AdminNewsForm({
         )}
       </div>
       {content.categoryCode === 'SECURITY_ADVISORIES' ? (
-        <fieldset disabled={pending}>
-          <legend>{messages.securityAdvisoryDetails}</legend>
-          <p className="field-help">{messages.securityAdvisoryGuidance}</p>
-          <div className="admin-news-field">
-            <label htmlFor="advisory-severity">{messages.severity}</label>
-            <select
-              id="advisory-severity"
-              required
-              value={advisory.severity}
-              onChange={(event) =>
-                setAdvisory((current) => ({ ...current, severity: event.target.value }))
-              }
-            >
-              <option value="">{messages.selectSeverity}</option>
-              {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL'].map((severity) => (
-                <option key={severity} value={severity}>
-                  {messages.severityLabels[severity as keyof typeof messages.severityLabels]}
-                </option>
-              ))}
-            </select>
-          </div>
-          {(
-            [
-              ['affectedAreaHa', messages.affectedAreaHa, 1000],
-              ['recommendedActionsHa', messages.recommendedActionsHa, 3000],
-              ['affectedAreaEn', messages.affectedAreaEn, 1000],
-              ['recommendedActionsEn', messages.recommendedActionsEn, 3000],
-            ] as const
-          ).map(([name, label, maximum]) => (
-            <div className="admin-news-field" key={String(name)}>
-              <label htmlFor={`advisory-${name}`}>{label}</label>
-              <textarea
-                id={`advisory-${name}`}
-                value={advisory[name as keyof Omit<AdvisoryDraft, 'references'>] as string}
-                maxLength={Number(maximum)}
-                rows={5}
+        <details className="admin-detail-card">
+          <summary>{messages.moreOptions}</summary>
+          <fieldset disabled={pending}>
+            <legend>{messages.securityAdvisoryDetails}</legend>
+            <p className="field-help">{messages.securityAdvisoryGuidance}</p>
+            <div className="admin-news-field">
+              <label htmlFor="advisory-severity">{messages.severity}</label>
+              <select
+                id="advisory-severity"
+                required
+                value={advisory.severity}
                 onChange={(event) =>
-                  setAdvisory((current) => ({ ...current, [name]: event.target.value }))
+                  setAdvisory((current) => ({ ...current, severity: event.target.value }))
                 }
-              />
+              >
+                <option value="">{messages.selectSeverity}</option>
+                {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL'].map((severity) => (
+                  <option key={severity} value={severity}>
+                    {messages.severityLabels[severity as keyof typeof messages.severityLabels]}
+                  </option>
+                ))}
+              </select>
             </div>
-          ))}
-          <fieldset>
-            <legend>{messages.references}</legend>
-            {advisory.references.map((reference, index) => (
-              <div className="advisory-reference-row" key={`reference-${index}`}>
-                <label htmlFor={`reference-label-${index}`}>{messages.referenceLabel}</label>
-                <input
-                  id={`reference-label-${index}`}
-                  value={reference.label}
-                  maxLength={160}
+            {(
+              [
+                ['affectedAreaHa', messages.affectedAreaHa, 1000],
+                ['recommendedActionsHa', messages.recommendedActionsHa, 3000],
+                ['affectedAreaEn', messages.affectedAreaEn, 1000],
+                ['recommendedActionsEn', messages.recommendedActionsEn, 3000],
+              ] as const
+            ).map(([name, label, maximum]) => (
+              <div className="admin-news-field" key={String(name)}>
+                <label htmlFor={`advisory-${name}`}>{label}</label>
+                <textarea
+                  id={`advisory-${name}`}
+                  value={advisory[name as keyof Omit<AdvisoryDraft, 'references'>] as string}
+                  maxLength={Number(maximum)}
+                  rows={5}
                   onChange={(event) =>
-                    setAdvisory((current) => ({
-                      ...current,
-                      references: current.references.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, label: event.target.value } : item,
-                      ),
-                    }))
+                    setAdvisory((current) => ({ ...current, [name]: event.target.value }))
                   }
                 />
-                <label htmlFor={`reference-url-${index}`}>{messages.referenceUrl}</label>
-                <input
-                  id={`reference-url-${index}`}
-                  type="url"
-                  value={reference.url}
-                  maxLength={2000}
-                  onChange={(event) =>
-                    setAdvisory((current) => ({
-                      ...current,
-                      references: current.references.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, url: event.target.value } : item,
-                      ),
-                    }))
-                  }
-                />
-                <button
-                  type="button"
-                  className="button button-secondary"
-                  onClick={() =>
-                    setAdvisory((current) => ({
-                      ...current,
-                      references: current.references.filter((_, itemIndex) => itemIndex !== index),
-                    }))
-                  }
-                >
-                  {messages.removeReference} {index + 1}
-                </button>
               </div>
             ))}
-            <button
-              type="button"
-              className="button button-secondary"
-              disabled={advisory.references.length >= 10}
-              onClick={() =>
-                setAdvisory((current) => ({
-                  ...current,
-                  references: [...current.references, { label: '', url: '' }],
-                }))
-              }
-            >
-              {messages.addReference}
-            </button>
+            <fieldset>
+              <legend>{messages.references}</legend>
+              {advisory.references.map((reference, index) => (
+                <div className="advisory-reference-row" key={`reference-${index}`}>
+                  <label htmlFor={`reference-label-${index}`}>{messages.referenceLabel}</label>
+                  <input
+                    id={`reference-label-${index}`}
+                    value={reference.label}
+                    maxLength={160}
+                    onChange={(event) =>
+                      setAdvisory((current) => ({
+                        ...current,
+                        references: current.references.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, label: event.target.value } : item,
+                        ),
+                      }))
+                    }
+                  />
+                  <label htmlFor={`reference-url-${index}`}>{messages.referenceUrl}</label>
+                  <input
+                    id={`reference-url-${index}`}
+                    type="url"
+                    value={reference.url}
+                    maxLength={2000}
+                    onChange={(event) =>
+                      setAdvisory((current) => ({
+                        ...current,
+                        references: current.references.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, url: event.target.value } : item,
+                        ),
+                      }))
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() =>
+                      setAdvisory((current) => ({
+                        ...current,
+                        references: current.references.filter(
+                          (_, itemIndex) => itemIndex !== index,
+                        ),
+                      }))
+                    }
+                  >
+                    {messages.removeReference} {index + 1}
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="button button-secondary"
+                disabled={advisory.references.length >= 10}
+                onClick={() =>
+                  setAdvisory((current) => ({
+                    ...current,
+                    references: [...current.references, { label: '', url: '' }],
+                  }))
+                }
+              >
+                {messages.addReference}
+              </button>
+            </fieldset>
           </fieldset>
-        </fieldset>
+        </details>
       ) : null}
+      <details className="admin-detail-card">
+        <summary>{messages.moreOptions}</summary>
+        <fieldset disabled={pending}>
+          <legend>{messages.contributors}</legend>
+          <p className="field-help">
+            {contributorProjections.map((item) => item.contributor.displayName).join(', ') ||
+              messages.noContributors}
+          </p>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => setNotice(messages.metadataSaved)}
+          >
+            {messages.addContributor}
+          </button>
+        </fieldset>
+        <fieldset disabled={pending}>
+          <legend>{messages.location}</legend>
+          <input
+            aria-label={messages.cityPlace}
+            placeholder={messages.cityPlace}
+            value={metadata.locations[0]?.place ?? ''}
+            onChange={(event) =>
+              setMetadata((current) => ({
+                ...current,
+                locations: [
+                  {
+                    country: current.locations[0]?.country ?? 'Nigeria',
+                    state: current.locations[0]?.state ?? null,
+                    lga: current.locations[0]?.lga ?? null,
+                    place: event.target.value,
+                  },
+                ],
+              }))
+            }
+          />
+        </fieldset>
+        <fieldset disabled={pending}>
+          <legend>{messages.sources}</legend>
+          <p className="field-help">
+            {metadata.sources.length > 0 ? messages.sourcesAdded : messages.noSources}
+          </p>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() =>
+              setMetadata((current) => ({
+                ...current,
+                sources: [
+                  ...current.sources,
+                  {
+                    type: 'OFFICIAL_STATEMENT',
+                    publicLabel: '',
+                    organization: '',
+                    url: null,
+                    confidential: false,
+                    internalNotes: null,
+                    displayOrder: current.sources.length,
+                  },
+                ],
+              }))
+            }
+          >
+            {messages.addSource}
+          </button>
+        </fieldset>
+      </details>
       <fieldset disabled={pending}>
         <legend>
           {messages.hausaContent} · {messages.required}
         </legend>
-        {field('titleHa', messages.title, 5, limits.title)}
-        {field('summaryHa', messages.summary, limits.summaryMin, limits.summary, true)}
-        {field('bodyHa', messages.body, limits.bodyMin, limits.body, true)}
+        <nav className="news-language-links" aria-label={messages.languageTabs}>
+          <button
+            type="button"
+            className="button"
+            onClick={() => setLanguage('ha')}
+            aria-pressed={language === 'ha'}
+          >
+            {messages.hausaContent} {messages.completeMark}
+          </button>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => setLanguage('en')}
+            aria-pressed={language === 'en'}
+          >
+            {messages.englishTranslation}{' '}
+            {content.titleEn && content.summaryEn && content.bodyEn
+              ? messages.completeMark
+              : messages.incompleteMark}
+          </button>
+        </nav>
+        {language !== 'ha' ? null : (
+          <>
+            {field('titleHa', messages.title, 5, limits.title)}
+            {field('summaryHa', messages.summary, limits.summaryMin, limits.summary, true)}
+            {field('bodyHa', messages.body, limits.bodyMin, limits.body, true)}
+          </>
+        )}
       </fieldset>
       <fieldset disabled={pending}>
         <legend>
           {messages.englishTranslation} · {messages.optional}
         </legend>
         <p className="field-help">{messages.translationGuidance}</p>
-        {field('titleEn', messages.title, 5, limits.title)}
-        {field('summaryEn', messages.summary, limits.summaryMin, limits.summary, true)}
-        {field('bodyEn', messages.body, limits.bodyMin, limits.body, true)}
+        <div hidden={language !== 'en'}>
+          {field('titleEn', messages.title, 5, limits.title)}
+          {field('summaryEn', messages.summary, limits.summaryMin, limits.summary, true)}
+          {field('bodyEn', messages.body, limits.bodyMin, limits.body, true)}
+        </div>
       </fieldset>
       <button className="button" type="submit" disabled={pending}>
         {pending ? messages.saving : article ? messages.saveDraft : messages.createArticle}

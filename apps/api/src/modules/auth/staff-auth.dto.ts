@@ -2,10 +2,13 @@ import { BadRequestException } from '@nestjs/common';
 import type { PipeTransform } from '@nestjs/common';
 import { z } from 'zod';
 
+export const staffEmailSchema = z.string().trim().toLowerCase().max(320).email();
+export const staffPasswordSchema = z.string().min(12).max(128);
+
 export const staffLoginSchema = z
   .object({
-    email: z.string().trim().toLowerCase().max(320).email(),
-    password: z.string().min(12).max(128),
+    email: staffEmailSchema,
+    password: staffPasswordSchema,
   })
   .strict();
 

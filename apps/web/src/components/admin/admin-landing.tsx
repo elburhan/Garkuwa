@@ -49,6 +49,13 @@ export function AdminLanding({
             </Link>
           </p>
         ) : null}
+        {principal.role !== 'ANALYST' ? (
+          <p>
+            <Link className="button" href={`/admin/live?lang=${locale}`}>
+              {messages.live.title}
+            </Link>
+          </p>
+        ) : null}
         <AdminLogoutButton locale={locale} apiBaseUrl={apiBaseUrl} />
       </section>
     </main>

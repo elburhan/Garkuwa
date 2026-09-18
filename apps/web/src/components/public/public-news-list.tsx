@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { getMessages, getPublicPath, type Locale } from '@/i18n';
-import type { PublicNewsList } from '@/lib/public-news-api';
+import { publicNewsMediaUrl, type PublicNewsList } from '@/lib/public-news-api';
 
 function newsPath(locale: Locale, page?: number): string {
   const base = getPublicPath(locale, 'news');
@@ -55,6 +55,16 @@ export function PublicNewsListPage({
             const href = `${getPublicPath(locale, 'news')}/${article.slug}`;
             return (
               <article className="public-news-card" key={article.slug}>
+                {article.featuredMedia ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={publicNewsMediaUrl(article.featuredMedia.url)}
+                    alt={article.featuredMedia.altText}
+                    width={article.featuredMedia.width}
+                    height={article.featuredMedia.height}
+                    loading="lazy"
+                  />
+                ) : null}
                 <p className="category-label">{article.category.name}</p>
                 <p className="publication-date">
                   {copy.publishedOn}{' '}

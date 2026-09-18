@@ -1,7 +1,12 @@
 import { webEnvironment } from './env';
+import type { NewsroomAssignmentUpdate, NewsroomWorkflowAction } from '@garkuwa/contracts/newsroom';
+import type {
+  ArticleCorrectionInput,
+  ArticleMediaUpdate,
+  ArticlePublishingMetadata,
+} from '@garkuwa/contracts/media';
 
-export type NewsDecision =
-  'SUBMIT_FOR_REVIEW' | 'RETURN_TO_DRAFT' | 'APPROVE_PUBLICATION' | 'ARCHIVE';
+export type NewsDecision = NewsroomWorkflowAction['decision'];
 
 export type NewsMutationResult =
   | { kind: 'success'; data: unknown }
@@ -66,3 +71,23 @@ export const transitionNewsArticle = (
     expectedUpdatedAt,
     ...(reason ? { reason } : {}),
   });
+
+export const assignNewsArticle = (articleId: string, assignment: NewsroomAssignmentUpdate) =>
+  mutate(`admin/news/${articleId}/assignment`, 'PATCH', assignment);
+
+export const updateNewsMetadata = (
+  articleId: string,
+  metadata: Record<string, unknown>,
+  expectedUpdatedAt: string,
+) => mutate(`admin/news/${articleId}/metadata`, 'PATCH', { ...metadata, expectedUpdatedAt });
+
+export const updateNewsArticleMedia = (articleId: string, media: ArticleMediaUpdate) =>
+  mutate(`admin/news/${articleId}/media`, 'PATCH', media);
+
+export const updateNewsPublishingMetadata = (
+  articleId: string,
+  metadata: ArticlePublishingMetadata,
+) => mutate(`admin/news/${articleId}/publishing-metadata`, 'PATCH', metadata);
+
+export const addNewsCorrection = (articleId: string, correction: ArticleCorrectionInput) =>
+  mutate(`admin/news/${articleId}/corrections`, 'POST', correction);

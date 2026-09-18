@@ -1,10 +1,15 @@
 import { cookies } from 'next/headers';
 import { z } from 'zod';
+import {
+  newsroomArticleListResponseSchema,
+  newsroomStatuses,
+  type NewsroomArticleListResponse,
+} from '@garkuwa/contracts/newsroom';
 
 import { staffSessionCookieName } from './admin-auth';
 import { webEnvironment } from './env';
 
-export const newsStatuses = ['DRAFT', 'IN_REVIEW', 'PUBLISHED', 'ARCHIVED'] as const;
+export const newsStatuses = newsroomStatuses;
 export type NewsStatus = (typeof newsStatuses)[number];
 export const newsCategoryCodes = [
   'ANNOUNCEMENTS',
@@ -48,7 +53,18 @@ const securityAdvisorySchema = z.object({
     }),
   ),
 });
-const listItemSchema = z.object({
+const articleMediaProjectionSchema = z.object({
+  id: z.string(),
+  mimeType: z.string(),
+  width: z.number().nullable(),
+  height: z.number().nullable(),
+  altTextHa: z.string(),
+  altTextEn: z.string().nullable(),
+  captionHa: z.string().nullable(),
+  captionEn: z.string().nullable(),
+  credit: z.string().nullable(),
+});
+const articleSchema = z.object({
   id: z.string(),
   slug: z.string(),
   status: z.enum(newsStatuses),
@@ -58,9 +74,6 @@ const listItemSchema = z.object({
   updatedAt: z.string(),
   author: authorSchema,
   category: categorySchema,
-  securityAdvisory: z.object({ severity: z.enum(securityAdvisorySeverities) }).nullable(),
-});
-const articleSchema = listItemSchema.extend({
   summaryHa: z.string(),
   bodyHa: z.string(),
   summaryEn: z.string().nullable(),
@@ -68,16 +81,47 @@ const articleSchema = listItemSchema.extend({
   submittedForReviewAt: z.string().nullable(),
   publishedAt: z.string().nullable(),
   archivedAt: z.string().nullable(),
+  draftRevisionId: z.string().nullable().optional(),
+  submittedRevisionId: z.string().nullable().optional(),
+  publishedRevisionId: z.string().nullable().optional(),
+  desk: z.string().nullable().optional(),
+  dueAt: z.string().nullable().optional(),
+  priority: z.string().optional(),
+  isFeatured: z.boolean().optional(),
+  isBreaking: z.boolean().optional(),
+  publicUpdatedAt: z.string().nullable().optional(),
+  assignedWriter: authorSchema.nullable().optional(),
+  assignedReviewer: authorSchema.nullable().optional(),
+  revisions: z.array(z.unknown()).optional(),
+  contributors: z.array(z.unknown()).optional(),
+  tags: z.array(z.unknown()).optional(),
+  topics: z.array(z.unknown()).optional(),
+  locations: z.array(z.unknown()).optional(),
+  sources: z.array(z.unknown()).optional(),
+  assignmentHistory: z.array(z.unknown()).optional(),
+  featuredMedia: articleMediaProjectionSchema.nullable().optional(),
+  socialMedia: z.object({ id: z.string() }).nullable().optional(),
+  media: z
+    .array(
+      z.object({
+        role: z.enum(['INLINE', 'GALLERY']),
+        displayOrder: z.number(),
+        media: articleMediaProjectionSchema,
+      }),
+    )
+    .optional(),
+  corrections: z
+    .array(
+      z.object({
+        id: z.string(),
+        noteHa: z.string(),
+        noteEn: z.string().nullable(),
+        createdAt: z.string(),
+        createdBy: authorSchema,
+      }),
+    )
+    .optional(),
   securityAdvisory: securityAdvisorySchema.nullable(),
-});
-const listSchema = z.object({
-  items: z.array(listItemSchema),
-  pagination: z.object({
-    page: z.number(),
-    pageSize: z.number(),
-    totalItems: z.number(),
-    totalPages: z.number(),
-  }),
 });
 const detailSchema = z.object({ article: articleSchema });
 const historySchema = z.object({
@@ -102,11 +146,25 @@ const categoriesSchema = z.object({
     }),
   ),
 });
+const eligibleAssigneesSchema = z.object({
+  items: z.array(authorSchema.extend({ role: z.string() })),
+});
+const newsroomDashboardSchema = z.object({
+  generatedAt: z.string(),
+  myDrafts: z.number().int().nonnegative(),
+  assignedToMe: z.number().int().nonnegative(),
+  waitingForReview: z.number().int().nonnegative(),
+  changesRequested: z.number().int().nonnegative(),
+  readyToPublish: z.number().int().nonnegative(),
+  publishedToday: z.number().int().nonnegative(),
+});
 
-export type NewsArticleList = z.infer<typeof listSchema>;
+export type NewsArticleList = NewsroomArticleListResponse;
 export type NewsArticle = z.infer<typeof articleSchema>;
 export type NewsHistory = z.infer<typeof historySchema>;
 export type NewsCategories = z.infer<typeof categoriesSchema>;
+export type NewsEligibleAssignees = z.infer<typeof eligibleAssigneesSchema>;
+export type NewsroomDashboard = z.infer<typeof newsroomDashboardSchema>;
 export type AdminNewsSearchParams = Record<string, string | string[] | undefined>;
 export type NewsApiResult<T> =
   | { kind: 'success'; data: T }
@@ -158,10 +216,24 @@ export function buildNewsPath(
     lang: first(parameters.lang),
     category: first(parameters.category),
     severity: first(parameters.severity),
+    view: first(parameters.view),
+    desk: first(parameters.desk),
+    priority: first(parameters.priority),
+    language: first(parameters.language),
   };
   for (const [key, value] of Object.entries(changes)) values[key] = value?.toString();
   const query = new URLSearchParams();
-  for (const key of ['page', 'status', 'category', 'severity', 'lang']) {
+  for (const key of [
+    'page',
+    'view',
+    'status',
+    'category',
+    'severity',
+    'desk',
+    'priority',
+    'language',
+    'lang',
+  ]) {
     if (values[key]) query.set(key, values[key]!);
   }
   const suffix = query.toString();
@@ -174,19 +246,39 @@ export async function loadNewsArticles(parameters: AdminNewsSearchParams) {
   const status = first(parameters.status);
   const category = first(parameters.category);
   const severity = first(parameters.severity);
+  const view = first(parameters.view);
+  const desk = first(parameters.desk);
+  const priority = first(parameters.priority);
+  const language = first(parameters.language);
   if (page) query.set('page', page);
   if (status) query.set('status', status);
   if (category) query.set('category', category);
   if (severity) query.set('severity', severity);
-  return serverGet(`admin/news?${query}`, listSchema);
+  if (view) query.set('view', view);
+  if (desk) query.set('desk', desk);
+  if (priority) query.set('priority', priority);
+  if (language) query.set('language', language);
+  return serverGet(`admin/news?${query}`, newsroomArticleListResponseSchema);
 }
 
 export async function loadNewsCategories() {
   return serverGet('admin/news/categories', categoriesSchema);
 }
 
+export async function loadNewsEligibleAssignees() {
+  return serverGet('admin/news/eligible-assignees', eligibleAssigneesSchema);
+}
+
+export async function loadNewsroomDashboard() {
+  return serverGet('admin/news/dashboard', newsroomDashboardSchema);
+}
+
 export async function loadNewsArticle(articleId: string) {
   return serverGet(`admin/news/${articleId}`, detailSchema);
+}
+
+export async function loadNewsPreview(articleId: string) {
+  return serverGet(`admin/news/${articleId}/preview`, detailSchema);
 }
 
 export async function loadNewsHistory(articleId: string) {
